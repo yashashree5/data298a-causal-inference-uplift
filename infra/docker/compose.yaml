@@ -1,0 +1,34 @@
+# Run through the root Makefile, or use docker compose --project-directory .
+# from the repository root so relative paths and .env resolve there.
+name: data298a-idm-mini
+
+services:
+  nuplan:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        NUPLAN_DEVKIT_COMMIT: ce3c323af01c0d7ec5672f7832ef53f9c679aab0
+    image: data298a/idm-mini-reproduction:1.0
+    environment:
+      NUPLAN_DEVKIT_ROOT: /opt/nuplan-devkit
+      NUPLAN_PYTHON: /usr/local/bin/python
+      NUPLAN_DATA_ROOT: /data
+      NUPLAN_MAPS_ROOT: /data/maps
+      NUPLAN_EXP_ROOT: /artifacts/nuplan
+      IDM_OUTPUT_ROOT: /artifacts/idm_mini
+    volumes:
+      - type: bind
+        source: ${NUPLAN_HOST_DATA_ROOT:?Set NUPLAN_HOST_DATA_ROOT in .env}
+        target: /data
+        read_only: true
+      - type: bind
+        source: ${NUPLAN_HOST_ARTIFACT_ROOT:-./artifacts}
+        target: /artifacts
+      - type: bind
+        source: .
+        target: /workspace
+    tmpfs:
+      - /data/maps/.maplocks
+    working_dir: /workspace

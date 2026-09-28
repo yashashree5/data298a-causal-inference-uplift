@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local dependencies and generated outputs.
+/external/
+/artifacts/
+
+# nuPlan data is mounted from outside the repository.
+*.db
+*.db-shm
+*.db-wal
