@@ -1,0 +1,28 @@
+name: data298a-pdm-mini
+
+services:
+  pdm:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.pdm
+    image: data298a/pdm-closed-mini:1.0
+    environment:
+      NUPLAN_DATA_ROOT: /data
+      NUPLAN_MAPS_ROOT: /data/maps
+      NUPLAN_EXP_ROOT: /artifacts/nuplan
+      PDM_OUTPUT_ROOT: /artifacts/pdm_mini
+    volumes:
+      - type: bind
+        source: ${NUPLAN_HOST_DATA_ROOT:?Set NUPLAN_HOST_DATA_ROOT in .env}
+        target: /data
+        read_only: true
+      - type: bind
+        source: ${NUPLAN_HOST_ARTIFACT_ROOT:-./artifacts}
+        target: /artifacts
+      - type: bind
+        source: .
+        target: /workspace
+    tmpfs:
+      - /data/maps/.maplocks
+    working_dir: /workspace
