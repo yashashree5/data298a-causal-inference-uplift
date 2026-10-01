@@ -57,10 +57,11 @@ we investigate:
 
 ## Current Project Status
 
-The current review branch, **`test/pdm-closed-mini`**, contains a completed local
+The current review branch, **`test/idm-mini-reproduction`**, contains a completed local
 comparison of **IDM and PDM-Closed**. These are upstream driving planners, not
 the causal/uplift models the team will develop. Nothing needs to be merged into
-`main` to review or run this branch.
+`main` to review or run this branch. The original IDM work and PDM-Closed
+comparison are consolidated here; teammates need only this branch.
 
 The `mini_68` experiment uses the same fixed 68 scenarios for both planners,
 covering 14 official challenge categories, 38 driving logs, and four map locations.
@@ -303,7 +304,7 @@ and limits on how representative the sample is.
 
 ### Completed 68-Scenario IDM/PDM-Closed Comparison
 
-PDM-Closed work is isolated on `test/pdm-closed-mini`. It reuses the saved mini
+PDM-Closed and IDM work are together on `test/idm-mini-reproduction`. PDM reuses the saved mini
 sample and adds a separate Docker image without changing the original IDM
 environment. See [Docker setup](infra/docker/README.md) and
 [PDM runner commands](tools/README.md#pdm-closed-mini-comparison) to run both
