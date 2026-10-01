@@ -49,8 +49,8 @@ After the [Docker setup](../infra/docker/README.md):
 ```bash
 make pdm-mini-smoke                      # First saved scenario
 make idm-mini-matched RUN_ARGS=--limit=1  # Matched baseline on that scenario
-make pdm-mini                           # All 68, not just the smoke scenario
-make idm-mini-matched                    # All 68 in the same environment
+make pdm-mini RUN_ARGS="--experiment mini_68_local"  # All 68
+make idm-mini-matched RUN_ARGS="--experiment mini_68_local"  # Same environment
 ```
 
 For host-side command validation without Docker or data:
@@ -69,6 +69,11 @@ artifacts/mini_68/
 ├── planner_outcomes.csv
 └── experiment.json
 ```
+
+The committed `mini_68` snapshot contains only the combined tables, experiment
+metadata, and two result summaries, not the full audit files listed below. The
+commands above use `mini_68_local` to preserve that snapshot. Use another explicit
+experiment name if this local output already exists.
 
 The default experiment is `mini_<selected count>`: full runs use `mini_68`,
 one-scenario smoke checks use `mini_1`. Each planner directory contains:
@@ -113,16 +118,17 @@ samples, code versions, packages and evaluation settings, and requires exactly
 one valid outcome for each planner on each scenario. Smoke runs and incomplete
 runs are rejected. It never silently drops scenarios to make the join succeed.
 
-Run inside the PDM image after completing both planners. This command is for a
-new output; it intentionally refuses to overwrite the table already generated:
+Run inside the PDM image after completing both planners in `mini_68_local` as
+above. This command is for a new output and refuses to overwrite existing files.
+The committed `mini_68` summaries alone cannot be used as source runs:
 
 ```bash
 docker compose --project-directory . -f infra/docker/compose.pdm.yaml run --rm pdm \
   python -m tools.build_planner_outcomes \
-  --idm-run /artifacts/mini_68/idm \
-  --pdm-run /artifacts/mini_68/pdm_closed \
-  --output /artifacts/mini_68/planner_outcomes.parquet \
-  --csv /artifacts/mini_68/planner_outcomes.csv
+  --idm-run /artifacts/mini_68_local/idm \
+  --pdm-run /artifacts/mini_68_local/pdm_closed \
+  --output /artifacts/mini_68_local/planner_outcomes.parquet \
+  --csv /artifacts/mini_68_local/planner_outcomes.csv
 ```
 
 The output is a **long-format dataset**, with 136 rows for 68 scenarios and two

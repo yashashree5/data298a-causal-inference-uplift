@@ -350,16 +350,27 @@ driving log together when defining train/test splits.
 
 ### What Teammates Receive Through Git
 
-The code, documentation, Docker definitions, EDA notebook, and selected-scenario
-CSV are tracked. **The raw databases/maps, `.env`, upstream clones, and generated
-`artifacts/` are not.** A fresh clone will not contain the 136-row result table.
+The code, documentation, Docker definitions, and these review artifacts are tracked:
 
-To inspect existing results without rerunning, obtain `planner_outcomes.parquet`,
-the optional CSV copy, and `experiment.json` from the experiment owner through
-the team's chosen sharing channel. For a full audit or to rebuild the table,
-also obtain the `idm/` and `pdm_closed/` source-run directories, including their
-manifests, environments, reports, resolved configurations, and metrics. No shared
-artifact location is configured in this repository yet.
+- [EDA notebook with saved summary outputs](notebooks/nuplan_mini_eda.ipynb).
+- [Fixed 68-scenario sample CSV](configs/scenarios/idm_mini_sample.csv). This is
+  identical to the EDA-generated sample; a second copy is not needed.
+- [Outcome CSV](artifacts/mini_68/planner_outcomes.csv) and
+  [Parquet](artifacts/mini_68/planner_outcomes.parquet): the same 136 outcome rows.
+- [Experiment metadata](artifacts/mini_68/experiment.json) and validated result
+  summaries for [IDM](artifacts/mini_68/idm/result.json) and
+  [PDM-Closed](artifacts/mini_68/pdm_closed/result.json).
+
+Teammates can inspect these without downloading nuPlan or running simulations.
+**Raw databases/maps, `.env`, upstream clones, the large EDA catalog, and full
+simulation logs/metrics remain excluded from Git.** Only the five listed
+`mini_68` files are allowed through the artifact ignore rules.
+
+The report/aggregate paths in `result.json` refer to local audit files, not files
+included in this snapshot. For a full audit or to rebuild the table, obtain both
+complete source-run directories from the experiment owner, including manifests,
+environments, reports, resolved configurations, and metrics. The summary JSONs
+alone are not enough to rebuild the table.
 
 ### Local Setup
 
@@ -388,16 +399,19 @@ it to an absolute host directory in `.env`.
 make check
 make pdm-docker-build
 make pdm-mini-dry-run
-make pdm-mini
-make idm-mini-matched
+make pdm-mini RUN_ARGS="--experiment mini_68_local"
+make idm-mini-matched RUN_ARGS="--experiment mini_68_local"
 ```
 
-The final two commands run all 68 scenarios under `artifacts/mini_68/`. Use
+The final two commands run all 68 scenarios under `artifacts/mini_68_local/`,
+leaving the committed `mini_68` snapshot unchanged. Use
 `idm-mini-matched` for this comparison so IDM and PDM share the same environment.
 Confirm `valid: true`, 68 scored scenarios, and zero failures in each planner's
 `result.json`. Then use the [table-building command](tools/README.md#long-format-planner-outcome-table)
 to generate Parquet, CSV, and `experiment.json`; simulation alone does not create
-the combined table. Existing result folders/exports are never overwritten.
+the combined table. Existing result folders/exports are never overwritten. If
+`mini_68_local` already exists, choose another name consistently for both planners
+and the table export. Do not delete the committed snapshot to rerun.
 
 ### Original IDM-Only Reproduction (Historical)
 
