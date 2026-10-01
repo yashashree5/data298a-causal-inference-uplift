@@ -7,6 +7,7 @@ are not extracted here; scenario categories remain retrospective metadata.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import time
 
@@ -50,6 +51,16 @@ def exactly_one(root, pattern):
     if len(files) != 1:
         raise ValueError(f"Expected exactly one {pattern} in {root}, found {len(files)}")
     return files[0]
+
+
+def recorded_run_id(manifest):
+    """Use saved provenance, not the directory name, so results can be relocated."""
+    if manifest.get("run_id"):
+        return manifest["run_id"]
+    ids = [arg.split("=", 1)[1] for arg in manifest["command"] if arg.startswith("experiment_uid=")]
+    if len(ids) != 1:
+        raise ValueError("Expected one recorded experiment_uid in the run manifest")
+    return ids[0]
 
 
 def wait_for_runs(runs, seconds):
@@ -117,7 +128,8 @@ def build_table(idm_run, pdm_run, sample):
             columns={"scenario_name": "scenario_token"})
         frame = frame.merge(status, on=["log_name", "scenario_token"], validate="one_to_one")
         frame["planner"] = planner
-        frame["run_id"] = run.name
+        run_id = recorded_run_id(manifest)
+        frame["run_id"] = run_id
         frame["sample_sha256"] = sample_hash
         frame["nuplan_commit"] = manifest["nuplan_commit"]
         frame["tuplan_garage_commit"] = manifest["tuplan_garage_commit"]
@@ -126,7 +138,7 @@ def build_table(idm_run, pdm_run, sample):
         configs.append(yaml.safe_load(exactly_one(run, "code/hydra/config.yaml").read_text()))
         environments.append((run / "environment.txt").read_text())
         sources[planner] = {
-            "run_id": run.name, "official_score": verified["official_score"],
+            "run_id": run_id, "official_score": verified["official_score"],
             "report_sha256": hashlib.sha256(report_file.read_bytes()).hexdigest(),
             "aggregate_sha256": hashlib.sha256(aggregate_file.read_bytes()).hexdigest(),
         }
@@ -150,6 +162,33 @@ def save_csv(table, output):
     return output
 
 
+def experiment_metadata(table, sources, output, idm_run, pdm_run, csv_output=None):
+    """Describe the setup with relative paths; run IDs stay in provenance only."""
+    parent = output.resolve().parent
+    manifest = json.loads((idm_run / "run_manifest.json").read_text())
+    settings = dict(arg.split("=", 1) for arg in manifest["command"] if "=" in arg)
+    metadata = {
+        "experiment": parent.name,
+        "scenario_count": int(table.scenario_id.nunique()),
+        "row_count": len(table),
+        "sample_sha256": table.sample_sha256.iloc[0],
+        "nuplan_commit": table.nuplan_commit.iloc[0],
+        "tuplan_garage_commit": table.tuplan_garage_commit.iloc[0],
+        "simulation": settings["+simulation"],
+        "simulation_seed": int(settings["seed"]),
+        "scenario_builder": settings["scenario_builder"],
+        "outcome_table": output.name,
+        "csv_copy": os.path.relpath(csv_output.resolve(), parent) if csv_output else None,
+        "conditions_status": "Not extracted; category and map columns are metadata, not model features.",
+        "source_runs": {},
+    }
+    for planner, root in [("idm", idm_run), ("pdm-closed", pdm_run)]:
+        metadata["source_runs"][planner] = {
+            **sources[planner], "directory": os.path.relpath(root.resolve(), parent),
+        }
+    return metadata
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--idm-run", type=Path, required=True)
@@ -164,6 +203,9 @@ def main():
         raise FileExistsError(args.output)
     if args.csv and (args.csv.exists() or args.csv.resolve() == args.output.resolve()):
         raise ValueError("CSV output must be a new file distinct from the Parquet output")
+    metadata_path = args.output.parent / "experiment.json"
+    if metadata_path.exists():
+        raise FileExistsError(metadata_path)
     if args.wait_seconds:
         print(f"Waiting up to {args.wait_seconds}s for both validated runs; output: {args.output}", flush=True)
     wait_for_runs([args.idm_run, args.pdm_run], args.wait_seconds)
@@ -186,6 +228,10 @@ def main():
     if args.csv:
         save_csv(table, args.csv)
         print(f"Saved CSV inspection copy to {args.csv}")
+    metadata = experiment_metadata(table, sources, args.output, args.idm_run, args.pdm_run, args.csv)
+    with metadata_path.open("x") as stream:
+        json.dump(metadata, stream, indent=2)
+        stream.write("\n")
     print(f"Saved {len(table)} rows / {table.scenario_id.nunique()} scenarios to {args.output}")
     print(json.dumps(sources, indent=2))
 

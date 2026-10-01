@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, save_csv, validate_pair, wait_for_runs
+from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, recorded_run_id, save_csv, validate_pair, wait_for_runs
 
 
 class PlannerOutcomesTest(unittest.TestCase):
@@ -22,6 +22,12 @@ class PlannerOutcomesTest(unittest.TestCase):
 
     def test_same_experiment_accepts_different_output_filenames(self):
         validate_pair(self.manifests, self.configs, self.environments)
+
+    def test_run_id_survives_directory_relocation(self):
+        self.assertEqual("original", recorded_run_id({"command": ["python", "experiment_uid=original"]}))
+        self.assertEqual("new", recorded_run_id({"run_id": "new"}))
+        with self.assertRaises(ValueError):
+            recorded_run_id({"command": ["python"]})
 
     def test_rejects_mismatched_manifest_fields(self):
         for key in self.manifests[0]:

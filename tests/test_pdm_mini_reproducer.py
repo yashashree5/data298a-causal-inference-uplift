@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 from tools.idm_mini_reproducer import DEFAULT_SAMPLE, load_scenarios
-from tools.pdm_mini_reproducer import build_command, validate_results
+from tools.pdm_mini_reproducer import build_command, experiment_run_root, validate_results
 
 
 class PdmMiniReproducerTest(unittest.TestCase):
@@ -39,6 +39,15 @@ class PdmMiniReproducerTest(unittest.TestCase):
     def test_complete_run_passes(self):
         self.assertTrue(self.validate()["valid"])
         self.assertEqual(0.8, self.validate()["official_score"])
+
+    def test_experiment_paths_are_planner_neutral(self):
+        self.assertEqual(Path("/artifacts/mini_68/idm"),
+                         experiment_run_root(Path("/artifacts"), "mini_68", "idm"))
+        self.assertEqual(Path("/artifacts/mini_68/pdm_closed"),
+                         experiment_run_root(Path("/artifacts"), "mini_68", "pdm-closed"))
+        for name in ["../escape", "/absolute", "", "two/levels"]:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                experiment_run_root(Path("/artifacts"), name, "idm")
 
     def test_zero_scores_are_valid_not_simulation_failures(self):
         for row in self.scores:

@@ -11,7 +11,7 @@ services:
       NUPLAN_DATA_ROOT: /data
       NUPLAN_MAPS_ROOT: /data/maps
       NUPLAN_EXP_ROOT: /artifacts/nuplan
-      PDM_OUTPUT_ROOT: /artifacts/pdm_mini
+      PLANNER_OUTPUT_ROOT: /artifacts
     volumes:
       - type: bind
         source: ${NUPLAN_HOST_DATA_ROOT:?Set NUPLAN_HOST_DATA_ROOT in .env}

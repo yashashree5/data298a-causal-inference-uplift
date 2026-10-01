@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 import os
+import re
 from pathlib import Path
 import shlex
 import subprocess
@@ -31,7 +32,7 @@ def build_command(scenarios, devkit_root, python_executable, run_root, experimen
     """Reuse the IDM settings; change only the planner and output experiment name."""
     command = build_idm_command(scenarios, devkit_root, python_executable, run_root, experiment_uid)
     command[command.index("planner=idm_planner")] = f"planner={PLANNERS[planner][0]}"
-    command[command.index("experiment_name=idm_mini_reproduction")] = "experiment_name=pdm_mini_comparison"
+    command[command.index("experiment_name=idm_mini_reproduction")] = "experiment_name=planner_comparison"
     return command + [SEARCH_PATH]
 
 
@@ -117,14 +118,22 @@ def checkout_revision(root):
     return subprocess.check_output(git + ["rev-parse", "HEAD"], text=True).strip()
 
 
+def experiment_run_root(output_root, experiment, planner):
+    """Keep each planner under a named experiment, never a timestamped outer folder."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", experiment):
+        raise ValueError("Experiment name must contain only letters, numbers, underscores or hyphens")
+    return output_root / experiment / planner.replace("-", "_")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sample", type=Path, default=DEFAULT_SAMPLE)
     parser.add_argument("--planner", choices=PLANNERS, default="pdm-closed")
     parser.add_argument("--limit", type=int, help="First N saved rows; omit to run all 68")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--experiment", help="Experiment folder name; defaults to mini_<selected count>")
     parser.add_argument("--output-root", type=Path,
-                        default=Path(os.getenv("PDM_OUTPUT_ROOT", PROJECT_ROOT / "artifacts" / "pdm_mini")))
+                        default=Path(os.getenv("PLANNER_OUTPUT_ROOT", PROJECT_ROOT / "artifacts")))
     args = parser.parse_args()
     sample = args.sample.expanduser().resolve()
     scenarios = load_scenarios(sample, args.limit)
@@ -135,12 +144,16 @@ def main():
     garage = Path(os.getenv("TUPLAN_GARAGE_ROOT", PROJECT_ROOT / "external" / "tuplan_garage")).resolve()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     uid = f"{args.planner}_mini_{stamp}"
-    run_root = args.output_root.expanduser().resolve() / uid
+    experiment = args.experiment or f"mini_{len(scenarios)}"
+    run_root = experiment_run_root(args.output_root.expanduser().resolve(), experiment, args.planner)
     command = build_command(scenarios, devkit, sys.executable, run_root, uid, args.planner)
     print(f"Validated {len(scenarios)} scenarios; planner={args.planner}", flush=True)
     print(shlex.join(command), flush=True)
     if args.dry_run:
         return 0
+
+    if run_root.exists():
+        raise FileExistsError(f"Results already exist at {run_root}. Use a new --experiment name; nothing was overwritten.")
 
     for name in ["NUPLAN_DATA_ROOT", "NUPLAN_MAPS_ROOT"]:
         if not os.getenv(name) or not Path(os.environ[name]).is_dir():
@@ -153,6 +166,8 @@ def main():
             raise FileNotFoundError(db)
     manifest = {
         "created_utc": stamp,
+        "run_id": uid,
+        "experiment": experiment,
         "planner": args.planner,
         "sample": str(sample),
         "sample_sha256": hashlib.sha256(sample.read_bytes()).hexdigest(),
