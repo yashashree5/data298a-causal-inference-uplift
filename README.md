@@ -287,13 +287,39 @@ nuPlan 1.2.2 image:
 | PDM-Closed | 0.9447383900450849 | `pdm-closed_mini_20261001T011457811841Z` |
 | Matched IDM | 0.9392060569897165 | `idm_mini_20261001T011608338642Z` |
 
-Run IDs use UTC, hence the next day's date. Artifacts are under
-`artifacts/pdm_mini/<run-id>/`, including `result.json`, `run_manifest.json`,
-per-scenario scores, and nested nuPlan logs/configuration/reports. The first
+Run IDs use UTC, hence the next day's date. Smoke artifacts are under
+`artifacts/mini_1/idm/` and `artifacts/mini_1/pdm_closed/`, including `result.json`,
+`run_manifest.json`, per-scenario scores, and nested nuPlan outputs. The first
 PDM run predates console capture; its nested nuPlan `log.txt` remains available.
-These are **one-scenario integration checks**, not 68-scenario benchmark results
-or evidence of planner superiority. All 68 IDs pass the command dry-run; the
-full matched PDM/IDM comparison has **not been run** on this branch yet.
+These smoke scores are **one-scenario integration checks**, not benchmark results.
+
+The subsequent full matched experiment completed **68/68 scenarios for each
+planner**, with no failures or missing/duplicate pairs. IDM scored
+**0.7600884182496237** and PDM-Closed **0.9004246949123553** on this fixed mini
+sample. Both used the same nuPlan 1.2.2 image and reactive evaluation settings.
+This is not a claim about the original full benchmark cohort.
+
+Artifacts are organized by experiment setup:
+
+```text
+artifacts/
+├── eda/
+├── mini_1/                 # Earlier paired smoke checks
+├── mini_68/
+│   ├── idm/
+│   ├── pdm_closed/
+│   ├── planner_outcomes.parquet
+│   ├── planner_outcomes.csv
+│   └── experiment.json
+└── idm_mini/               # Preserved original nuPlan 1.2.0 reproduction
+```
+
+The combined table contains 136 scenario-planner rows. Initial-condition model
+features have **not** been extracted. The JSON records setup/source provenance;
+timestamps remain internal metadata rather than outer directory names. Original
+simulation logs and nuPlan's internal folders are preserved unchanged. Rerunning
+into an existing planner folder is refused; use an explicit new experiment name
+for another setup. See [runner documentation](tools/README.md) for commands.
 
 ### Local Setup
 

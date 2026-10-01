@@ -59,8 +59,19 @@ For host-side command validation without Docker or data:
 python3 -m tools.pdm_mini_reproducer --dry-run
 ```
 
-Each execution creates a unique directory under `artifacts/pdm_mini/`, or
-`pdm_mini/` under the configured host artifact root. It contains:
+Outputs are organized by experiment setup, not by planner or timestamp:
+
+```text
+artifacts/mini_68/
+├── idm/
+├── pdm_closed/
+├── planner_outcomes.parquet
+├── planner_outcomes.csv
+└── experiment.json
+```
+
+The default experiment is `mini_<selected count>`: full runs use `mini_68`,
+one-scenario smoke checks use `mini_1`. Each planner directory contains:
 
 - `run_manifest.json`: exact selected IDs, full-sample hash, upstream commits,
   command, and dataset paths;
@@ -68,6 +79,16 @@ Each execution creates a unique directory under `artifacts/pdm_mini/`, or
 - `console.log` and nested nuPlan logs, resolved configuration and metrics;
 - `result.json`: success/failure counts and the official aggregate score;
 - `scenario_scores.csv`: individual scenario scores and metric values.
+
+Run IDs remain inside metadata and nuPlan's internal generated layout. An
+existing planner directory is never overwritten. Use
+`RUN_ARGS="--experiment mini_68_alternative"` for a genuinely different setup, consistently for both
+planners, or deliberately move an old experiment aside before rerunning it.
+For different samples with the same row count, explicitly give different
+experiment names. No automatic replacement or deletion is performed.
+`PLANNER_OUTPUT_ROOT` is the artifact root inside Docker (`/artifacts`), mounted
+from `NUPLAN_HOST_ARTIFACT_ROOT`. The original v1.2 IDM runner retains its legacy
+`artifacts/idm_mini/` layout and is unchanged.
 
 The runner checks exact log/token membership, duplicate or missing results,
 category and planner identity, simulation failures, finite scores, and the
@@ -92,19 +113,22 @@ samples, code versions, packages and evaluation settings, and requires exactly
 one valid outcome for each planner on each scenario. Smoke runs and incomplete
 runs are rejected. It never silently drops scenarios to make the join succeed.
 
-Run inside the PDM image, replacing the two run-directory placeholders:
+Run inside the PDM image after completing both planners. This command is for a
+new output; it intentionally refuses to overwrite the table already generated:
 
 ```bash
 docker compose --project-directory . -f infra/docker/compose.pdm.yaml run --rm pdm \
   python -m tools.build_planner_outcomes \
-  --idm-run /artifacts/pdm_mini/<full-idm-run> \
-  --pdm-run /artifacts/pdm_mini/<full-pdm-run> \
-  --output /artifacts/pdm_mini/planner_outcomes.parquet
+  --idm-run /artifacts/mini_68/idm \
+  --pdm-run /artifacts/mini_68/pdm_closed \
+  --output /artifacts/mini_68/planner_outcomes.parquet \
+  --csv /artifacts/mini_68/planner_outcomes.csv
 ```
 
 The output is a **long-format dataset**, with 136 rows for 68 scenarios and two
 planners. Its unique key is `(scenario_id, planner)` within this selected pair
-of runs. Adding another experiment later also requires `run_id` in the key.
+of runs. Keep the experiment name when combining different experiment tables;
+the recorded `run_id` remains available for source tracing.
 It retains identifiers, map/category/window metadata, planner, run provenance,
 success status, score, and the eight component metrics used in nuPlan scoring.
 Component metrics are scores, not raw collision counts or physical units.
@@ -118,9 +142,13 @@ stay together in any train/test split; 136 rows are only 68 paired scenarios.
 
 Parquet preserves types and embeds source run IDs and artifact hashes. The
 builder rereads the saved file to verify it and refuses to overwrite an existing
-output. Read it in a notebook with `pandas.read_parquet(...)`.
+output. The adjacent `experiment.json` records the sample, revisions, row count,
+source run IDs, scores, artifact hashes and relative source directories. Original
+logs/configs retain the paths used when the simulation ran; those historical
+paths are not rewritten during relocation. Read the table in a notebook with
+`pandas.read_parquet(...)`.
 
-For a local CSV inspection copy, add `--csv /artifacts/pdm_mini/outcomes.csv`
+For a local CSV inspection copy, add `--csv /artifacts/mini_68/planner_outcomes.csv`
 when building a new table. To export an **existing** Parquet without rebuilding
 or rerunning simulations, use the same script's function inside the PDM Python
 environment (replace the path with the desired table):
@@ -130,7 +158,7 @@ from pathlib import Path
 import pandas as pd
 from tools.build_planner_outcomes import save_csv
 
-source = Path("/artifacts/pdm_mini/comparison_20261001T0218/planner_outcomes.parquet")
+source = Path("/artifacts/mini_68/planner_outcomes.parquet")
 save_csv(pd.read_parquet(source), source.with_suffix(".csv"))
 ```
 

@@ -10,6 +10,9 @@ Run Make targets from the repository root, with dataset paths set in `.env`
 as described in the main README. Docker mounts the dataset read-only. The
 temporary map-lock directory is writable; maps and databases are not modified.
 Both environments honor `NUPLAN_HOST_ARTIFACT_ROOT` (default `./artifacts`).
+The matched planner service uses `PLANNER_OUTPUT_ROOT=/artifacts`; results go
+under `mini_68/idm/` and `mini_68/pdm_closed/` (smoke checks: `mini_1/`).
+Existing experiment results are protected from accidental overwrites.
 
 ## PDM-Closed pins
 
