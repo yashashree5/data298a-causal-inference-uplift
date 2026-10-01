@@ -1,0 +1,147 @@
+"""Combine two completed matched runs into a long-format Parquet outcome table.
+
+This is experiment data, not a spreadsheet workbook. Initial-condition features
+are not extracted here; scenario categories remain retrospective metadata.
+"""
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+
+from tools.idm_mini_reproducer import DEFAULT_SAMPLE, load_scenarios
+from tools.pdm_mini_reproducer import PLANNERS, validate_results
+
+
+OUTCOMES = [
+    "score", "no_ego_at_fault_collisions", "drivable_area_compliance",
+    "ego_is_making_progress", "driving_direction_compliance",
+    "ego_progress_along_expert_route", "time_to_collision_within_bound",
+    "speed_limit_compliance", "ego_is_comfortable",
+]
+MATCHED_CONFIG = [
+    "scenario_builder", "scenario_filter", "observation", "ego_controller",
+    "simulation_time_controller", "simulation_history_buffer_duration",
+    "simulation_metric", "seed", "worker", "run_metric",
+]
+
+
+def validate_pair(manifests, configs, environments):
+    """Reject different samples, revisions, packages or evaluation settings."""
+    for key in ["sample_sha256", "selected_scenarios", "scenario_count", "nuplan_commit",
+                "tuplan_garage_commit", "data_root", "maps_root", "python"]:
+        if manifests[0][key] != manifests[1][key]:
+            raise ValueError(f"Run mismatch: {key}")
+    if environments[0] != environments[1]:
+        raise ValueError("Run mismatch: installed packages")
+    for key in MATCHED_CONFIG:
+        if configs[0][key] != configs[1][key]:
+            raise ValueError(f"Run mismatch: simulation setting {key}")
+    # Aggregate filenames contain a run timestamp, not a scientific parameter.
+    aggregates = [{name: {key: value for key, value in config.items() if key != "file_name"}
+                   for name, config in item["metric_aggregator"].items()} for item in configs]
+    if aggregates[0] != aggregates[1]:
+        raise ValueError("Run mismatch: metric aggregation")
+
+
+def exactly_one(root, pattern):
+    files = list(root.rglob(pattern))
+    if len(files) != 1:
+        raise ValueError(f"Expected exactly one {pattern} in {root}, found {len(files)}")
+    return files[0]
+
+
+def build_table(idm_run, pdm_run, sample):
+    import pandas as pd
+    import yaml
+
+    scenarios = load_scenarios(sample)
+    sample_hash = hashlib.sha256(sample.read_bytes()).hexdigest()
+    frames, manifests, configs, environments = [], [], [], []
+    sources = {}
+    for planner, run in [("idm", idm_run), ("pdm-closed", pdm_run)]:
+        manifest = json.loads((run / "run_manifest.json").read_text())
+        result = json.loads((run / "result.json").read_text())
+        if manifest["planner"] != planner or not result["valid"]:
+            raise ValueError(f"Wrong planner or invalid/incomplete run: {run}")
+        if manifest["sample_sha256"] != sample_hash or manifest["selected_scenarios"] != scenarios:
+            raise ValueError(f"Run does not contain the entire requested sample: {run}")
+        if manifest["scenario_count"] != len(scenarios):
+            raise ValueError(f"Scenario count mismatch: {run}")
+        report_file = exactly_one(run, "runner_report.parquet")
+        aggregate_file = exactly_one(run, "aggregator_metric/*.parquet")
+        report = pd.read_parquet(report_file)
+        aggregate = pd.read_parquet(aggregate_file)
+        scores = aggregate[aggregate["log_name"].notna()]
+        final = aggregate[aggregate["scenario"] == "final_score"]
+        verified = validate_results(scenarios, report.to_dict("records"), scores.to_dict("records"),
+                                    final.to_dict("records"), PLANNERS[planner][1])
+        if not verified["valid"]:
+            raise ValueError(f"Raw artifact validation failed: {verified['errors']}")
+        for column in OUTCOMES:
+            if not pd.to_numeric(scores[column], errors="coerce").between(0, 1).all():
+                raise ValueError(f"Missing or invalid outcome {column}: {run}")
+        context = pd.DataFrame(scenarios)[[
+            "scenario_id", "log_name", "scenario_token", "scenario_type", "map_name",
+            "anchor_timestamp_us", "window_start_us", "window_end_us",
+        ]]
+        for column in ["anchor_timestamp_us", "window_start_us", "window_end_us"]:
+            context[column] = context[column].astype("int64")
+        outcomes = scores[["log_name", "scenario"] + OUTCOMES].rename(columns={"scenario": "scenario_token"})
+        frame = context.merge(outcomes, on=["log_name", "scenario_token"], validate="one_to_one")
+        status = report[["log_name", "scenario_name", "succeeded", "error_message"]].rename(
+            columns={"scenario_name": "scenario_token"})
+        frame = frame.merge(status, on=["log_name", "scenario_token"], validate="one_to_one")
+        frame["planner"] = planner
+        frame["run_id"] = run.name
+        frame["sample_sha256"] = sample_hash
+        frame["nuplan_commit"] = manifest["nuplan_commit"]
+        frame["tuplan_garage_commit"] = manifest["tuplan_garage_commit"]
+        frames.append(frame)
+        manifests.append(manifest)
+        configs.append(yaml.safe_load(exactly_one(run, "code/hydra/config.yaml").read_text()))
+        environments.append((run / "environment.txt").read_text())
+        sources[planner] = {
+            "run_id": run.name, "official_score": verified["official_score"],
+            "report_sha256": hashlib.sha256(report_file.read_bytes()).hexdigest(),
+            "aggregate_sha256": hashlib.sha256(aggregate_file.read_bytes()).hexdigest(),
+        }
+
+    validate_pair(manifests, configs, environments)
+    table = pd.concat(frames, ignore_index=True).sort_values(["scenario_id", "planner"]).reset_index(drop=True)
+    if len(table) != 2 * len(scenarios) or table.duplicated(["scenario_id", "planner"]).any():
+        raise ValueError("Expected exactly two unique planner rows per scenario")
+    if not (table.groupby("scenario_id")["planner"].nunique() == 2).all():
+        raise ValueError("Incomplete planner pairs")
+    return table, sources
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--idm-run", type=Path, required=True)
+    parser.add_argument("--pdm-run", type=Path, required=True)
+    parser.add_argument("--sample", type=Path, default=DEFAULT_SAMPLE)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    table, sources = build_table(args.idm_run, args.pdm_run, args.sample)
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    # Parquet retains numeric types, identifiers and provenance in one data file.
+    data = pa.Table.from_pandas(table, preserve_index=False)
+    metadata = dict(data.schema.metadata or {})
+    metadata[b"experiment_sources"] = json.dumps(sources).encode()
+    metadata[b"conditions_status"] = b"Not extracted; category and map columns are metadata, not model features."
+    data = data.replace_schema_metadata(metadata)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with args.output.open("xb") as stream:
+        pq.write_table(data, stream)
+    reread = pq.read_table(args.output)
+    if not reread.equals(data):
+        raise RuntimeError("Saved Parquet differs from assembled table")
+    print(f"Saved {len(table)} rows / {table.scenario_id.nunique()} scenarios to {args.output}")
+    print(json.dumps(sources, indent=2))
+
+
+if __name__ == "__main__":
+    main()

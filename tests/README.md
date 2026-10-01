@@ -30,3 +30,7 @@ tests, not simulations and not evidence of driving performance.
 
 Run all fast tests with `make check`. Run the real one-scenario simulation with
 `make pdm-mini-smoke`; see [tools](../tools/README.md) for the matched IDM run.
+
+`test_build_planner_outcomes.py` checks that the long-format table builder rejects
+different samples, revisions, packages, evaluation settings and metric weights.
+Its artifact discovery requires one unambiguous source file per run.

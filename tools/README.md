@@ -83,3 +83,39 @@ This image uses nuPlan **1.2.2**, whereas the recorded original IDM result used
 check matching sample hashes and simulation settings first. Do not compare a
 one-scenario smoke score with a 68-scenario average. This is a mini pilot, not
 the published benchmark's original evaluation cohort.
+
+## Long-format planner outcome table
+
+`build_planner_outcomes.py` combines **completed full-sample** IDM and PDM runs.
+It rereads the original reports and aggregate Parquet files, verifies matching
+samples, code versions, packages and evaluation settings, and requires exactly
+one valid outcome for each planner on each scenario. Smoke runs and incomplete
+runs are rejected. It never silently drops scenarios to make the join succeed.
+
+Run inside the PDM image, replacing the two run-directory placeholders:
+
+```bash
+docker compose --project-directory . -f infra/docker/compose.pdm.yaml run --rm pdm \
+  python -m tools.build_planner_outcomes \
+  --idm-run /artifacts/pdm_mini/<full-idm-run> \
+  --pdm-run /artifacts/pdm_mini/<full-pdm-run> \
+  --output /artifacts/pdm_mini/planner_outcomes.parquet
+```
+
+The output is a **long-format dataset**, with 136 rows for 68 scenarios and two
+planners. Its unique key is `(scenario_id, planner)` within this selected pair
+of runs. Adding another experiment later also requires `run_id` in the key.
+It retains identifiers, map/category/window metadata, planner, run provenance,
+success status, score, and the eight component metrics used in nuPlan scoring.
+Component metrics are scores, not raw collision counts or physical units.
+There is no stored difference column. Effects can be derived by pairing rows.
+
+This is the **outcome table**, not yet a complete causal-model feature table.
+Initial speed, surrounding-agent counts and other pre-simulation conditions
+still need extraction. Scenario category tags may describe future events and
+must not be blindly used as model inputs. All rows from a driving log should
+stay together in any train/test split; 136 rows are only 68 paired scenarios.
+
+Parquet preserves types and embeds source run IDs and artifact hashes. The
+builder rereads the saved file to verify it and refuses to overwrite an existing
+output. Read it in a notebook with `pandas.read_parquet(...)`.
