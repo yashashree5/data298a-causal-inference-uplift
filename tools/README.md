@@ -119,3 +119,8 @@ stay together in any train/test split; 136 rows are only 68 paired scenarios.
 Parquet preserves types and embeds source run IDs and artifact hashes. The
 builder rereads the saved file to verify it and refuses to overwrite an existing
 output. Read it in a notebook with `pandas.read_parquet(...)`.
+
+If the two simulations are still running, add `--wait-seconds 10800` to queue
+assembly for up to three hours. This does not start or restart simulations.
+Failed validation stops assembly; a timeout leaves existing runs untouched and
+does not create a partial table. Inspect the command's exit status afterward.

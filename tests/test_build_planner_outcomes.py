@@ -1,9 +1,10 @@
 import copy
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, validate_pair
+from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, validate_pair, wait_for_runs
 
 
 class PlannerOutcomesTest(unittest.TestCase):
@@ -57,6 +58,17 @@ class PlannerOutcomesTest(unittest.TestCase):
             (root / "second.parquet").touch()
             with self.assertRaises(ValueError):
                 exactly_one(root, "*.parquet")
+
+    def test_wait_checks_completion_and_rejects_failed_or_missing_runs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaises(TimeoutError):
+                wait_for_runs([root], 0)
+            (root / "result.json").write_text(json.dumps({"valid": False}))
+            with self.assertRaises(ValueError):
+                wait_for_runs([root], 0)
+            (root / "result.json").write_text(json.dumps({"valid": True}))
+            wait_for_runs([root], 0)
 
 
 if __name__ == "__main__":

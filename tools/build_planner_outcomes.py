@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import time
 
 from tools.idm_mini_reproducer import DEFAULT_SAMPLE, load_scenarios
 from tools.pdm_mini_reproducer import PLANNERS, validate_results
@@ -49,6 +50,29 @@ def exactly_one(root, pattern):
     if len(files) != 1:
         raise ValueError(f"Expected exactly one {pattern} in {root}, found {len(files)}")
     return files[0]
+
+
+def wait_for_runs(runs, seconds):
+    """Allow assembly to follow ongoing simulations without resubmitting them."""
+    if seconds < 0:
+        raise ValueError("Wait duration cannot be negative")
+    deadline = time.monotonic() + seconds
+    while True:
+        ready = 0
+        for run in runs:
+            try:
+                result = json.loads((run / "result.json").read_text())
+            except (FileNotFoundError, json.JSONDecodeError):
+                continue  # A run may still be writing its final report.
+            if not result.get("valid"):
+                raise ValueError(f"Run validation failed; inspect {run / 'result.json'}")
+            ready += 1
+        if ready == len(runs):
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("Runs are not both ready; no combined table was written")
+        time.sleep(min(5, remaining))
 
 
 def build_table(idm_run, pdm_run, sample):
@@ -122,7 +146,14 @@ def main():
     parser.add_argument("--pdm-run", type=Path, required=True)
     parser.add_argument("--sample", type=Path, default=DEFAULT_SAMPLE)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--wait-seconds", type=int, default=0,
+                        help="Wait up to N seconds for ongoing runs; default requires finished runs")
     args = parser.parse_args()
+    if args.output.exists():
+        raise FileExistsError(args.output)
+    if args.wait_seconds:
+        print(f"Waiting up to {args.wait_seconds}s for both validated runs; output: {args.output}", flush=True)
+    wait_for_runs([args.idm_run, args.pdm_run], args.wait_seconds)
     table, sources = build_table(args.idm_run, args.pdm_run, args.sample)
     import pyarrow as pa
     import pyarrow.parquet as pq
