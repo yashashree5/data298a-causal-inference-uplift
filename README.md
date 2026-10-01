@@ -57,26 +57,54 @@ we investigate:
 
 ## Current Project Status
 
-The project is currently in the **scoping, literature-review, and technical
-feasibility phase**.
+The current review branch, **`test/pdm-closed-mini`**, contains a completed local
+comparison of **IDM and PDM-Closed**. These are upstream driving planners, not
+the causal/uplift models the team will develop. Nothing needs to be merged into
+`main` to review or run this branch.
 
-Following feedback from the project presentation, the team is investigating
-recent AI approaches, particularly **Transformer and attention-based
-architectures**, for modeling complex driving scenarios and planner-performance
-differences.
+The `mini_68` experiment uses the same fixed 68 scenarios for both planners,
+covering 14 official challenge categories, 38 driving logs, and four map locations.
+Both runs use nuPlan 1.2.2, closed-loop reactive agents, simulation seed 0, and
+the same scoring configuration.
 
-The final four model architectures have **not yet been frozen**.
+| Planner | Successfully scored | Simulation failures | Official aggregate |
+| --- | ---: | ---: | ---: |
+| IDM | 68/68 | 0 | 0.7600884182496237 |
+| PDM-Closed | 68/68 | 0 | 0.9004246949123553 |
 
-Current work includes:
+These results describe **our selected mini sample**, not the paper's original
+benchmark cohort. The sample is approximately category-balanced, not a random
+representation of all driving. A zero score is a valid outcome, not necessarily
+a simulation failure.
 
-- refining the project scope;
-- reviewing recent Transformer-based autonomous-driving research;
-- investigating the nuPlan dataset and scenario representation;
-- studying the IDM published baseline;
-- evaluating candidate planner options;
-- defining evaluation metrics;
-- assessing compute and simulation requirements;
-- refining the end-to-end system architecture.
+**Completed:** dataset EDA, saved sample, Docker runners, matched simulations,
+result validation, and a 136-row outcome table in Parquet and CSV.
+**Next:** extract pre-simulation condition features, join them to the outcomes,
+then develop and evaluate the causal/uplift models. Those models are not yet
+implemented here. PlanTF and PLUTO are on hold and are not part of this experiment.
+
+### Start Here for Team Review
+
+- [Sample selection](configs/scenarios/README.md): why 68 scenarios, the 14
+  categories, sampling rules, and coverage limitations.
+- [EDA notebook](notebooks/nuplan_mini_eda.ipynb): database inventory and scenario
+  exploration. Rerunning EDA is not required to use the committed sample.
+- [Tools](tools/README.md): simulation commands, validation, and table export.
+- [Docker](infra/docker/README.md): pinned dependencies and data mounts.
+- [Tests](tests/README.md): what the quick tests check, and what they do not.
+
+To review without downloading nuPlan or building Docker, run from the repository
+root with Python 3:
+
+```bash
+make check
+python3 -m tools.pdm_mini_reproducer --dry-run
+python3 -m tools.pdm_mini_reproducer --planner idm --dry-run
+```
+
+These commands check the code/manifest and print simulation commands; they do
+not simulate driving or reproduce the scores. For a real run, use
+[Local Setup](#local-setup).
 
 ---
 
@@ -84,8 +112,8 @@ Current work includes:
 
 ### nuPlan
 
-The project currently plans to use the **nuPlan autonomous-driving planning
-benchmark**.
+The local experiment uses the **nuPlan v1.1 mini dataset** and nuPlan's
+closed-loop reactive evaluation framework.
 
 nuPlan provides:
 
@@ -108,8 +136,9 @@ The dataset contains driving data collected across multiple cities, including:
 
 Large raw nuPlan files will **not** be committed to this repository.
 
-Instructions and scripts for obtaining and preparing the required subset will
-be maintained under `data/`.
+Download the mini databases and maps from the
+[official nuPlan download page](https://www.nuscenes.org/nuplan#download), then
+follow [Local Setup](#local-setup). Use nuPlan mini, not nuScenes mini.
 
 ---
 
@@ -137,8 +166,8 @@ are functioning correctly before conducting the main experiments.
 
 ## Proposed Experiment
 
-The planned experiment compares a baseline planner with a candidate planner on
-selected nuPlan scenarios.
+The planner comparison is complete for the selected mini scenarios. The next
+stage connects these paired outcomes to scenario conditions for modeling.
 
 Conceptually:
 
@@ -255,9 +284,11 @@ will not be committed to this repository.
 infra/docker/                         Docker environment and pinned devkit
 notebooks/nuplan_mini_eda.ipynb       Scenario inventory and sample selection
 configs/scenarios/idm_mini_sample.csv Committed 68-scenario test manifest
-tools/idm_mini_reproducer.py          IDM mini simulation entrypoint
-tests/test_idm_mini_reproducer.py     Fast manifest and command tests
-external/nuplan-devkit/               Optional local devkit clone, Git ignored
+tools/pdm_mini_reproducer.py          Matched IDM and PDM-Closed entrypoint
+tools/build_planner_outcomes.py      Validated paired-run table and CSV export
+tools/idm_mini_reproducer.py          Preserved original IDM-only runner
+tests/                               Fast command and result-validation tests
+external/                            Optional local upstream clones, Git ignored
 artifacts/                             Generated EDA and simulation outputs
 ```
 
@@ -270,30 +301,15 @@ See [the sample selection README](configs/scenarios/README.md) for the eligibili
 rules, sampling seed, overlap exclusion, explanation of the 68-scenario count,
 and limits on how representative the sample is.
 
-### PDM-Closed Mini Pilot
+### Completed 68-Scenario IDM/PDM-Closed Comparison
 
 PDM-Closed work is isolated on `test/pdm-closed-mini`. It reuses the saved mini
 sample and adds a separate Docker image without changing the original IDM
 environment. See [Docker setup](infra/docker/README.md) and
-[PDM runner commands](tools/README.md#pdm-closed-mini-comparison). Start with the
-one-scenario smoke checks, then run both planners over the same 68 scenarios.
+[PDM runner commands](tools/README.md#pdm-closed-mini-comparison) to run both
+planners over the same 68 scenarios.
 
-On 2026-09-30 (local time), both planners completed and scored the first saved
-scenario (`13b93b0c326b5345`, `behind_long_vehicle`) with no failures in the new
-nuPlan 1.2.2 image:
-
-| Planner | One-scenario score | Local run ID |
-| --- | ---: | --- |
-| PDM-Closed | 0.9447383900450849 | `pdm-closed_mini_20261001T011457811841Z` |
-| Matched IDM | 0.9392060569897165 | `idm_mini_20261001T011608338642Z` |
-
-Run IDs use UTC, hence the next day's date. Smoke artifacts are under
-`artifacts/mini_1/idm/` and `artifacts/mini_1/pdm_closed/`, including `result.json`,
-`run_manifest.json`, per-scenario scores, and nested nuPlan outputs. The first
-PDM run predates console capture; its nested nuPlan `log.txt` remains available.
-These smoke scores are **one-scenario integration checks**, not benchmark results.
-
-The subsequent full matched experiment completed **68/68 scenarios for each
+The full matched experiment completed **68/68 scenarios for each
 planner**, with no failures or missing/duplicate pairs. IDM scored
 **0.7600884182496237** and PDM-Closed **0.9004246949123553** on this fixed mini
 sample. Both used the same nuPlan 1.2.2 image and reactive evaluation settings.
@@ -304,7 +320,6 @@ Artifacts are organized by experiment setup:
 ```text
 artifacts/
 ├── eda/
-├── mini_1/                 # Earlier paired smoke checks
 ├── mini_68/
 │   ├── idm/
 │   ├── pdm_closed/
@@ -321,18 +336,74 @@ simulation logs and nuPlan's internal folders are preserved unchanged. Rerunning
 into an existing planner folder is refused; use an explicit new experiment name
 for another setup. See [runner documentation](tools/README.md) for commands.
 
+Each table row represents **one scenario evaluated by one planner**, with
+identifiers, scenario metadata, planner, outcomes, and provenance. The unique
+key is `(scenario_id, planner)` within this experiment. There is no stored
+difference column: derive PDM-Closed minus IDM by pairing the two rows for a
+scenario. The 136 rows represent 68 pairs, not 136 independent scenarios.
+
+For the next modeling stage, extract conditions available at simulation start,
+not future trajectory information. Scenario-category tags can describe future
+events and are not automatically safe input features. Keep all scenarios from a
+driving log together when defining train/test splits.
+
+### What Teammates Receive Through Git
+
+The code, documentation, Docker definitions, EDA notebook, and selected-scenario
+CSV are tracked. **The raw databases/maps, `.env`, upstream clones, and generated
+`artifacts/` are not.** A fresh clone will not contain the 136-row result table.
+
+To inspect existing results without rerunning, obtain `planner_outcomes.parquet`,
+the optional CSV copy, and `experiment.json` from the experiment owner through
+the team's chosen sharing channel. For a full audit or to rebuild the table,
+also obtain the `idm/` and `pdm_closed/` source-run directories, including their
+manifests, environments, reports, resolved configurations, and metrics. No shared
+artifact location is configured in this repository yet.
+
 ### Local Setup
 
-Copy `.env.example` to `.env` and set `NUPLAN_HOST_DATA_ROOT` to the directory
-containing `maps/` and `nuplan-v1.1/`.
+Requirements: Python 3 for the fast checks, Make, Docker with Compose, and the
+licensed nuPlan mini databases plus maps. **No AWS account, GPU, or pretrained
+checkpoint is needed for IDM/PDM-Closed.** Images use Linux/amd64, including
+emulation on Apple Silicon; build and simulation times vary by machine.
+
+If `.env` does not exist, copy `.env.example` to `.env`. Do not overwrite an
+existing `.env`. Set `NUPLAN_HOST_DATA_ROOT` to an absolute directory with this
+layout:
+
+```text
+nuplan-dataset/
+├── maps/
+└── nuplan-v1.1/
+    └── splits/
+        └── mini/            # 64 .db files
+```
 
 Run the commands below from the repository root. `NUPLAN_HOST_ARTIFACT_ROOT`
 defaults to `./artifacts`, relative to that root. To store runs elsewhere, set
 it to an absolute host directory in `.env`.
 
 ```bash
-cp .env.example .env
 make check
+make pdm-docker-build
+make pdm-mini-dry-run
+make pdm-mini
+make idm-mini-matched
+```
+
+The final two commands run all 68 scenarios under `artifacts/mini_68/`. Use
+`idm-mini-matched` for this comparison so IDM and PDM share the same environment.
+Confirm `valid: true`, 68 scored scenarios, and zero failures in each planner's
+`result.json`. Then use the [table-building command](tools/README.md#long-format-planner-outcome-table)
+to generate Parquet, CSV, and `experiment.json`; simulation alone does not create
+the combined table. Existing result folders/exports are never overwritten.
+
+### Original IDM-Only Reproduction (Historical)
+
+The original nuPlan 1.2.0 workflow is retained separately. It is not the matched
+1.2.2 comparison above:
+
+```bash
 make docker-build
 make idm-mini-dry-run
 make idm-mini
