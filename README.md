@@ -270,6 +270,31 @@ See [the sample selection README](configs/scenarios/README.md) for the eligibili
 rules, sampling seed, overlap exclusion, explanation of the 68-scenario count,
 and limits on how representative the sample is.
 
+### PDM-Closed Mini Pilot
+
+PDM-Closed work is isolated on `test/pdm-closed-mini`. It reuses the saved mini
+sample and adds a separate Docker image without changing the original IDM
+environment. See [Docker setup](infra/docker/README.md) and
+[PDM runner commands](tools/README.md#pdm-closed-mini-comparison). Start with the
+one-scenario smoke checks, then run both planners over the same 68 scenarios.
+
+On 2026-09-30 (local time), both planners completed and scored the first saved
+scenario (`13b93b0c326b5345`, `behind_long_vehicle`) with no failures in the new
+nuPlan 1.2.2 image:
+
+| Planner | One-scenario score | Local run ID |
+| --- | ---: | --- |
+| PDM-Closed | 0.9447383900450849 | `pdm-closed_mini_20261001T011457811841Z` |
+| Matched IDM | 0.9392060569897165 | `idm_mini_20261001T011608338642Z` |
+
+Run IDs use UTC, hence the next day's date. Artifacts are under
+`artifacts/pdm_mini/<run-id>/`, including `result.json`, `run_manifest.json`,
+per-scenario scores, and nested nuPlan logs/configuration/reports. The first
+PDM run predates console capture; its nested nuPlan `log.txt` remains available.
+These are **one-scenario integration checks**, not 68-scenario benchmark results
+or evidence of planner superiority. All 68 IDs pass the command dry-run; the
+full matched PDM/IDM comparison has **not been run** on this branch yet.
+
 ### Local Setup
 
 Copy `.env.example` to `.env` and set `NUPLAN_HOST_DATA_ROOT` to the directory
