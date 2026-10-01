@@ -3,8 +3,9 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
-from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, validate_pair, wait_for_runs
+from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, save_csv, validate_pair, wait_for_runs
 
 
 class PlannerOutcomesTest(unittest.TestCase):
@@ -69,6 +70,24 @@ class PlannerOutcomesTest(unittest.TestCase):
                 wait_for_runs([root], 0)
             (root / "result.json").write_text(json.dumps({"valid": True}))
             wait_for_runs([root], 0)
+
+    def test_csv_export_omits_index_and_creates_parent_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "nested" / "outcomes.csv"
+            table = Mock()
+            self.assertEqual(output, save_csv(table, output))
+            self.assertTrue(output.parent.is_dir())
+            table.to_csv.assert_called_once_with(output, index=False, mode="x", encoding="utf-8")
+
+    def test_csv_export_preserves_existing_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "outcomes.csv"
+            output.write_text("existing data")
+            table = Mock()
+            with self.assertRaises(FileExistsError):
+                save_csv(table, output)
+            table.to_csv.assert_not_called()
+            self.assertEqual("existing data", output.read_text())
 
 
 if __name__ == "__main__":

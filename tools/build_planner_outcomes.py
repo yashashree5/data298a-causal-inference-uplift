@@ -140,17 +140,30 @@ def build_table(idm_run, pdm_run, sample):
     return table, sources
 
 
+def save_csv(table, output):
+    """Save a local inspection copy without an index or overwriting an existing file."""
+    output = Path(output)
+    if output.exists():
+        raise FileExistsError(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    table.to_csv(output, index=False, mode="x", encoding="utf-8")
+    return output
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--idm-run", type=Path, required=True)
     parser.add_argument("--pdm-run", type=Path, required=True)
     parser.add_argument("--sample", type=Path, default=DEFAULT_SAMPLE)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--csv", type=Path, help="Also save a CSV inspection copy at this path")
     parser.add_argument("--wait-seconds", type=int, default=0,
                         help="Wait up to N seconds for ongoing runs; default requires finished runs")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
+    if args.csv and (args.csv.exists() or args.csv.resolve() == args.output.resolve()):
+        raise ValueError("CSV output must be a new file distinct from the Parquet output")
     if args.wait_seconds:
         print(f"Waiting up to {args.wait_seconds}s for both validated runs; output: {args.output}", flush=True)
     wait_for_runs([args.idm_run, args.pdm_run], args.wait_seconds)
@@ -170,6 +183,9 @@ def main():
     reread = pq.read_table(args.output)
     if not reread.equals(data):
         raise RuntimeError("Saved Parquet differs from assembled table")
+    if args.csv:
+        save_csv(table, args.csv)
+        print(f"Saved CSV inspection copy to {args.csv}")
     print(f"Saved {len(table)} rows / {table.scenario_id.nunique()} scenarios to {args.output}")
     print(json.dumps(sources, indent=2))
 

@@ -120,6 +120,26 @@ Parquet preserves types and embeds source run IDs and artifact hashes. The
 builder rereads the saved file to verify it and refuses to overwrite an existing
 output. Read it in a notebook with `pandas.read_parquet(...)`.
 
+For a local CSV inspection copy, add `--csv /artifacts/pdm_mini/outcomes.csv`
+when building a new table. To export an **existing** Parquet without rebuilding
+or rerunning simulations, use the same script's function inside the PDM Python
+environment (replace the path with the desired table):
+
+```python
+from pathlib import Path
+import pandas as pd
+from tools.build_planner_outcomes import save_csv
+
+source = Path("/artifacts/pdm_mini/comparison_20261001T0218/planner_outcomes.parquet")
+save_csv(pd.read_parquet(source), source.with_suffix(".csv"))
+```
+
+CSV contains the same rows and columns, without a pandas index, and refuses to
+overwrite an existing file. Parquet remains the modeling source: CSV does not
+preserve embedded provenance metadata or column types. When opening CSV in
+Excel, import scenario tokens/IDs and microsecond timestamps as text to prevent
+automatic conversion or precision loss.
+
 If the two simulations are still running, add `--wait-seconds 10800` to queue
 assembly for up to three hours. This does not start or restart simulations.
 Failed validation stops assembly; a timeout leaves existing runs untouched and
