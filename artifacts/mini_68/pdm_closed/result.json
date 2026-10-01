@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "requested": 68,
+  "executed": 68,
+  "scored": 68,
+  "failed": 0,
+  "planner": "PDMClosedPlanner",
+  "official_score": 0.9004246949123553,
+  "errors": [],
+  "runner_report": "pdm_mini_comparison/closed_loop_reactive_agents/pdm-closed_mini_20261001T021818248545Z/runner_report.parquet",
+  "aggregate": "pdm_mini_comparison/closed_loop_reactive_agents/pdm-closed_mini_20261001T021818248545Z/aggregator_metric/closed_loop_reactive_agents_weighted_average_metrics_2026.10.01.02.18.25.parquet"
+}
