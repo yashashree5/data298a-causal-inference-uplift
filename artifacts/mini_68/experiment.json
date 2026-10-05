@@ -1,0 +1,30 @@
+{
+  "experiment": "mini_68",
+  "scenario_count": 68,
+  "row_count": 136,
+  "sample_sha256": "9162d8ae9d81a1068ca40a1d925a363b16a26e8df9026be84c7726c89e5bfcb5",
+  "nuplan_commit": "a581fbcab373db99a13f191f94521c75c256e080",
+  "tuplan_garage_commit": "b51d5d04fac1bd4389653b9ab2ff73ea88f435a3",
+  "simulation": "closed_loop_reactive_agents",
+  "simulation_seed": 0,
+  "scenario_builder": "nuplan_mini",
+  "outcome_table": "planner_outcomes.parquet",
+  "csv_copy": "planner_outcomes.csv",
+  "conditions_status": "Not extracted; category and map columns are metadata, not model features.",
+  "source_runs": {
+    "idm": {
+      "run_id": "idm_mini_20261001T021827737561Z",
+      "official_score": 0.7600884182496237,
+      "report_sha256": "e7eb17ba0252a95fedabdcafbf4abc691b9cb995d5d93e28476e8d3dbdce8ccf",
+      "aggregate_sha256": "e667079099e5f698d8901d0b0b02787f0a122e77bab5257f77d27d81a92b2827",
+      "directory": "idm"
+    },
+    "pdm-closed": {
+      "run_id": "pdm-closed_mini_20261001T021818248545Z",
+      "official_score": 0.9004246949123553,
+      "report_sha256": "be659ca70e562c73c0a801890564cf0bc141ad40aadaa0fc6ff2049753ff0244",
+      "aggregate_sha256": "3643b0504959ddf9ba80331c9970399ef1f444aa5fabd197822962fa3e542d6e",
+      "directory": "pdm_closed"
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 ### Causal Inference and Uplift Engine for Product Experimentation
 
-**DATA 298A / 298B — Master's Capstone Project**  
+**DATA 298A / 298B — Master's Capstone Project**<br>
 **Section 22 | Team 4 | Topic 20**
 
 ---
@@ -15,8 +15,8 @@ A candidate planner may improve average performance while becoming worse in spec
 
 This project investigates an **AV Planner Regression Intelligence Platform** that goes beyond overall benchmark scores to answer three practical questions:
 
-> **Where does a planner change improve performance?**  
-> **Where does it introduce regressions?**  
+> **Where does a planner change improve performance?**<br>
+> **Where does it introduce regressions?**<br>
 > **Which scenarios should engineers investigate first?**
 
 The system is intended as an offline experimentation and validation tool for autonomous-driving planning, simulation, and validation teams.
@@ -140,6 +140,62 @@ Its purpose is to verify that our:
 - result aggregation
 
 are working correctly before conducting the main experiments.
+
+---
+
+## Completed 68-Scenario Planner Comparison
+
+This repository includes a completed local comparison of **IDM and PDM-Closed**.
+These are upstream driving planners used to validate the experiment pipeline,
+not the causal/uplift models the team will develop.
+
+The `mini_68` experiment evaluates both planners on the same fixed 68 scenarios,
+covering 14 official challenge categories, 38 driving logs, and four map
+locations. Both runs use nuPlan 1.2.2, closed-loop reactive agents, simulation
+seed 0, and the same scoring configuration.
+
+| Planner | Successfully scored | Simulation failures | Official aggregate |
+|---|---:|---:|---:|
+| IDM | 68/68 | 0 | 0.7600884182496237 |
+| PDM-Closed | 68/68 | 0 | 0.9004246949123553 |
+
+These results describe the selected, approximately category-balanced mini
+sample. They are not a reproduction of the original benchmark cohort or a claim
+about performance across all nuPlan scenarios. A zero score is a valid outcome,
+not necessarily a simulation failure.
+
+The completed work includes dataset exploration, a deterministic scenario
+manifest, Docker runners, matched simulations, result validation, and a
+136-row outcome table in Parquet and CSV. Each row represents one planner on one
+scenario; the 136 rows form 68 matched pairs.
+
+### Review the Experiment
+
+- [Sample selection](configs/scenarios/README.md) documents the 68 scenarios,
+  sampling rules, and coverage limitations.
+- [EDA notebook](notebooks/nuplan_mini_eda.ipynb) contains the database inventory
+  and scenario exploration.
+- [Outcome CSV](artifacts/mini_68/planner_outcomes.csv) and
+  [Parquet](artifacts/mini_68/planner_outcomes.parquet) contain the matched
+  scenario-planner outcomes.
+- [Experiment metadata](artifacts/mini_68/experiment.json) records the shared
+  setup and source provenance.
+- [Tools](tools/README.md), [Docker](infra/docker/README.md), and
+  [tests](tests/README.md) document reproduction and validation.
+
+Teammates can inspect the committed sample and results without downloading
+nuPlan or rerunning simulations. From the repository root, the fast validation
+suite is:
+
+```bash
+make check
+python3 -m tools.pdm_mini_reproducer --dry-run
+python3 -m tools.pdm_mini_reproducer --planner idm --dry-run
+```
+
+These commands validate the code and manifest and print the simulation commands;
+they do not reproduce the scores. Full rerun instructions are in the
+[tools documentation](tools/README.md).
 
 ---
 
@@ -447,7 +503,7 @@ Current focus:
 
 ### M2 — Data & Planner Experiment Pipeline
 
-Planned work:
+Completed for the fixed `mini_68` development experiment:
 
 - configure reproducible nuPlan environment;
 - select development scenario subset;
@@ -511,33 +567,22 @@ Responsibilities may evolve as the technical design is finalized, while individu
 ```text
 .
 ├── README.md
+├── Makefile
+├── artifacts/
+│   └── mini_68/               # Committed matched outcome snapshot
 ├── configs/
-│
-├── data/
-│   └── README.md
-│
+│   └── scenarios/             # Fixed scenario manifest and selection notes
 ├── docs/
-│   ├── abstract/
-│   ├── architecture/
-│   ├── presentations/
-│   ├── progress-reports/
 │   └── research/
-│
-├── experiments/
-│
-├── notebooks/
-│
-├── src/
-│   ├── data/
-│   ├── simulation/
-│   ├── models/
-│   ├── evaluation/
-│   └── dashboard/
-│
-└── tests/
+├── infra/
+│   └── docker/                # Pinned nuPlan environments
+├── notebooks/                 # Dataset exploration
+├── tests/                     # Fast validation tests
+└── tools/                     # Planner runners and outcome assembly
 ```
 
-The structure will expand as implementation begins.
+Raw nuPlan data, complete simulation outputs, local environment files, and
+upstream repositories remain excluded from Git.
 
 ---
 
@@ -568,18 +613,20 @@ Each substantive unit of work should be associated with an owned Linear issue an
 
 ## Current Status
 
-**Phase: M1 — Problem Definition & Technical Feasibility**
+**Phase: M2 planner experiment pipeline completed; M3 modeling preparation**
 
 Current work is focused on:
 
-- validating the capstone problem and product scope;
-- studying nuPlan data feasibility;
-- defining planner experimentation;
+- extracting pre-simulation scenario-condition features;
+- joining those features to the matched planner outcomes;
+- defining leakage-safe train/test splits by driving log;
 - reviewing recent Transformer/attention-based approaches;
 - defining the evaluation protocol;
 - refining the system architecture.
 
-Implementation will proceed after the first technical decisions and experiment contracts are sufficiently defined.
+The causal/uplift models and regression-intelligence interface are not yet
+implemented. PlanTF and PLUTO are not part of the completed `mini_68`
+experiment.
 
 ---
 

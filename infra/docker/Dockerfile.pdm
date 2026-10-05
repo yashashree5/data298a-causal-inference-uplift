@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1.7
+# Build the existing IDM image first with `make docker-build`.
+FROM data298a/idm-mini-reproduction:1.0
+
+ARG PDM_NUPLAN_COMMIT=a581fbcab373db99a13f191f94521c75c256e080
+ARG TUPLAN_GARAGE_COMMIT=b51d5d04fac1bd4389653b9ab2ff73ea88f435a3
+
+USER root
+ENV TUPLAN_GARAGE_ROOT=/opt/tuplan_garage
+
+# Keep the original IDM image unchanged; install nuPlan 1.2.2 in this image only.
+RUN git -C "${NUPLAN_DEVKIT_ROOT}" fetch origin "${PDM_NUPLAN_COMMIT}" \
+    && git -C "${NUPLAN_DEVKIT_ROOT}" checkout "${PDM_NUPLAN_COMMIT}" \
+    && test "$(git -C "${NUPLAN_DEVKIT_ROOT}" rev-parse HEAD)" = "${PDM_NUPLAN_COMMIT}" \
+    && python -m pip install --no-deps -e "${NUPLAN_DEVKIT_ROOT}"
+
+COPY infra/docker/requirements.pdm.txt /tmp/requirements.pdm.txt
+RUN python -m pip install --no-cache-dir --no-deps -r /tmp/requirements.pdm.txt \
+    && git clone --filter=blob:none https://github.com/autonomousvision/tuplan_garage.git "${TUPLAN_GARAGE_ROOT}" \
+    && git -C "${TUPLAN_GARAGE_ROOT}" checkout "${TUPLAN_GARAGE_COMMIT}" \
+    && test "$(git -C "${TUPLAN_GARAGE_ROOT}" rev-parse HEAD)" = "${TUPLAN_GARAGE_COMMIT}" \
+    && python -m pip install --no-deps -e "${TUPLAN_GARAGE_ROOT}" \
+    && python -c 'from tuplan_garage.planning.simulation.planner.pdm_planner.pdm_closed_planner import PDMClosedPlanner'
+
+USER nuplan

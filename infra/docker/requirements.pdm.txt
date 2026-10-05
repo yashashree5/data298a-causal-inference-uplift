@@ -1,0 +1,4 @@
+# Additions to the existing CPU image; nuPlan 1.2.2 is pinned by Git in Dockerfile.pdm.
+scikit-learn==1.2.2
+threadpoolctl==3.1.0
+positional-encodings==6.0.1

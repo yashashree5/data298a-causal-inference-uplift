@@ -1,0 +1,27 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local dependencies and generated outputs.
+/external/
+# Share only the reviewed 68-scenario result snapshot, not full run directories.
+/artifacts/*
+!/artifacts/mini_68/
+/artifacts/mini_68/*
+!/artifacts/mini_68/planner_outcomes.parquet
+!/artifacts/mini_68/planner_outcomes.csv
+!/artifacts/mini_68/experiment.json
+!/artifacts/mini_68/idm/
+!/artifacts/mini_68/pdm_closed/
+/artifacts/mini_68/idm/*
+!/artifacts/mini_68/idm/result.json
+/artifacts/mini_68/pdm_closed/*
+!/artifacts/mini_68/pdm_closed/result.json
+
+# nuPlan data is mounted from outside the repository.
+*.db
+*.db-shm
+*.db-wal

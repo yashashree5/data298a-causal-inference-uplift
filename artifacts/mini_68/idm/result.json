@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "requested": 68,
+  "executed": 68,
+  "scored": 68,
+  "failed": 0,
+  "planner": "IDMPlanner",
+  "official_score": 0.7600884182496237,
+  "errors": [],
+  "runner_report": "pdm_mini_comparison/closed_loop_reactive_agents/idm_mini_20261001T021827737561Z/runner_report.parquet",
+  "aggregate": "pdm_mini_comparison/closed_loop_reactive_agents/idm_mini_20261001T021827737561Z/aggregator_metric/closed_loop_reactive_agents_weighted_average_metrics_2026.10.01.02.18.35.parquet"
+}
