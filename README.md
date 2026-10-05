@@ -1,111 +1,88 @@
-# Causal Inference and Uplift Engine for Product Experimentation
+# AV Planner Regression Intelligence Platform
 
-**DATA 298A — MSDA Project I**  
+### Causal Inference and Uplift Engine for Product Experimentation
+
+**DATA 298A / 298B — Master's Capstone Project**<br>
 **Section 22 | Team 4 | Topic 20**
 
-## Team
+---
 
-- Jim He
-- Ameya Khond
-- Prathamesh Mankar
-- Tejas Sawant
-- Yashashree Shinde
+## Overview
+
+Autonomous-driving motion planners are evaluated across large collections of simulated driving scenarios. Aggregate benchmark scores are useful for measuring overall performance, but they can hide important scenario-specific regressions.
+
+A candidate planner may improve average performance while becoming worse in specific situations such as highway merges, dense intersections, lane changes, or pedestrian interactions.
+
+This project investigates an **AV Planner Regression Intelligence Platform** that goes beyond overall benchmark scores to answer three practical questions:
+
+> **Where does a planner change improve performance?**<br>
+> **Where does it introduce regressions?**<br>
+> **Which scenarios should engineers investigate first?**
+
+The system is intended as an offline experimentation and validation tool for autonomous-driving planning, simulation, and validation teams.
 
 ---
 
-## Project Overview
+## Problem Statement
 
-Autonomous-driving planners are commonly evaluated using aggregate benchmark
-scores across many driving scenarios. While these scores are useful for comparing
-overall planner performance, they can hide scenario-specific improvements and
-regressions.
+Consider an autonomous-driving team evaluating a new planner release.
 
-A candidate planner may improve performance at intersections while performing
-worse during highway merges or complex pedestrian interactions.
+An aggregate benchmark might report:
 
-This project explores an **AI-based planner experimentation and regression
-intelligence system** that goes beyond average planner scores and investigates:
-
-- Where does a candidate planner improve performance?
-- Where does it introduce regressions?
-- Which scenario characteristics are associated with these differences?
-- Which scenarios should autonomous-driving engineers prioritize for further
-  simulation and validation?
-
-The current application domain is autonomous-driving planner evaluation using
-the **nuPlan planning benchmark**.
-
----
-
-## Course Topic
-
-**Topic 20 — Causal Inference and Uplift Engine for Product Experimentation**
-
-The project applies the core idea of heterogeneous effects to autonomous-driving
-planner experimentation.
-
-Instead of only asking:
-
-> Is the candidate planner better on average?
-
-we investigate:
-
-> Under which driving conditions does changing the planner improve or degrade
-> performance?
-
----
-
-## Current Project Status
-
-The current review branch, **`test/idm-mini-reproduction`**, contains a completed local
-comparison of **IDM and PDM-Closed**. These are upstream driving planners, not
-the causal/uplift models the team will develop. Nothing needs to be merged into
-`main` to review or run this branch. The original IDM work and PDM-Closed
-comparison are consolidated here; teammates need only this branch.
-
-The `mini_68` experiment uses the same fixed 68 scenarios for both planners,
-covering 14 official challenge categories, 38 driving logs, and four map locations.
-Both runs use nuPlan 1.2.2, closed-loop reactive agents, simulation seed 0, and
-the same scoring configuration.
-
-| Planner | Successfully scored | Simulation failures | Official aggregate |
-| --- | ---: | ---: | ---: |
-| IDM | 68/68 | 0 | 0.7600884182496237 |
-| PDM-Closed | 68/68 | 0 | 0.9004246949123553 |
-
-These results describe **our selected mini sample**, not the paper's original
-benchmark cohort. The sample is approximately category-balanced, not a random
-representation of all driving. A zero score is a valid outcome, not necessarily
-a simulation failure.
-
-**Completed:** dataset EDA, saved sample, Docker runners, matched simulations,
-result validation, and a 136-row outcome table in Parquet and CSV.
-**Next:** extract pre-simulation condition features, join them to the outcomes,
-then develop and evaluate the causal/uplift models. Those models are not yet
-implemented here. PlanTF and PLUTO are on hold and are not part of this experiment.
-
-### Start Here for Team Review
-
-- [Sample selection](configs/scenarios/README.md): why 68 scenarios, the 14
-  categories, sampling rules, and coverage limitations.
-- [EDA notebook](notebooks/nuplan_mini_eda.ipynb): database inventory and scenario
-  exploration. Rerunning EDA is not required to use the committed sample.
-- [Tools](tools/README.md): simulation commands, validation, and table export.
-- [Docker](infra/docker/README.md): pinned dependencies and data mounts.
-- [Tests](tests/README.md): what the quick tests check, and what they do not.
-
-To review without downloading nuPlan or building Docker, run from the repository
-root with Python 3:
-
-```bash
-make check
-python3 -m tools.pdm_mini_reproducer --dry-run
-python3 -m tools.pdm_mini_reproducer --planner idm --dry-run
+```text
+Baseline Planner   0.76
+Candidate Planner  0.82
 ```
 
-These commands check the code/manifest and print simulation commands; they do
-not simulate driving or reproduce the scores. For a real run, use
-[Local Setup](#local-setup).
+The candidate appears better overall.
+
+However, its behavior may actually look like:
+
+```text
+Dense intersections       Improvement
+Pedestrian interactions   Improvement
+Normal lane following     Similar
+Highway merges            Regression
+High-speed lane changes   Regression
+```
+
+Those regressions can be hidden by the aggregate score.
+
+Our project focuses on identifying and prioritizing these **scenario-specific planner differences** rather than relying only on average benchmark performance.
+
+---
+
+## Project Objective
+
+Our objective is to build an end-to-end experimentation and regression-intelligence system that can:
+
+1. evaluate baseline and candidate planners across autonomous-driving scenarios;
+2. characterize the driving conditions associated with each scenario;
+3. identify scenario-specific planner improvements and regressions;
+4. study modern AI methods for learning patterns in these differences;
+5. prioritize important regression scenarios for engineering investigation;
+6. present the results through an interpretable validation interface.
+
+The goal is **not simply to determine which planner has the highest average score**.
+
+The goal is to understand:
+
+> **Under what driving conditions does a planner change help or hurt?**
+
+---
+
+## Target Users
+
+The intended users are engineers working on:
+
+- autonomous-driving motion planning;
+- simulation;
+- planner validation;
+- regression testing;
+- safety evaluation;
+- release analysis.
+
+A useful system should help these users focus limited simulation and debugging resources on scenarios where a planner change appears most consequential.
 
 ---
 
@@ -113,326 +90,552 @@ not simulate driving or reproduce the scores. For a real run, use
 
 ### nuPlan
 
-The local experiment uses the **nuPlan v1.1 mini dataset** and nuPlan's
-closed-loop reactive evaluation framework.
+The current benchmark selected for the project is **nuPlan**, a large-scale autonomous-driving planning benchmark containing real-world driving logs and a closed-loop simulation framework.
 
-nuPlan provides:
+nuPlan provides information including:
 
-- real-world driving logs;
-- HD maps;
-- ego-vehicle trajectories;
-- surrounding-agent trajectories;
-- traffic-light information;
+- ego-vehicle states;
+- surrounding traffic agents;
+- trajectories;
+- road and map information;
+- traffic context;
 - categorized driving scenarios;
 - planner implementations;
 - closed-loop simulation;
 - standardized planner evaluation metrics.
 
-The dataset contains driving data collected across multiple cities, including:
+The benchmark contains more than 1,200 hours of driving data collected across:
 
-- Boston
-- Pittsburgh
-- Las Vegas
-- Singapore
+- Boston;
+- Pittsburgh;
+- Las Vegas;
+- Singapore.
 
-Large raw nuPlan files will **not** be committed to this repository.
+Raw nuPlan data will **not** be stored in this repository.
 
-Download the mini databases and maps from the
-[official nuPlan download page](https://www.nuscenes.org/nuplan#download), then
-follow [Local Setup](#local-setup). Use nuPlan mini, not nuScenes mini.
+Dataset acquisition, versioning, scenario selection, and preprocessing instructions will be documented separately.
 
 ---
 
 ## Published Baseline
 
-The current published baseline selected for reproduction is the
-**Intelligent Driver Model (IDM) Planner** from the nuPlan benchmark.
+The current published reference point is the **Intelligent Driver Model (IDM) Planner** reported in the nuPlan benchmark.
 
-The published nuPlan benchmark reports an IDM closed-loop reactive score of
-**0.76 in Table III**.
+The published benchmark reports:
 
-Baseline reproduction is separate from the models developed by the team.
+```text
+IDM Planner
+Closed-loop reactive score: 0.76
+nuPlan benchmark paper — Table III
+```
+
+Baseline reproduction is separate from the models developed by our team.
 
 Its purpose is to verify that our:
 
-- nuPlan environment,
-- scenario selection,
-- simulation configuration,
-- planner setup,
-- and metric aggregation
+- simulation environment;
+- planner configuration;
+- scenario selection;
+- metric computation;
+- result aggregation
 
-are functioning correctly before conducting the main experiments.
+are working correctly before conducting the main experiments.
 
 ---
 
-## Proposed Experiment
+## Completed 68-Scenario Planner Comparison
 
-The planner comparison is complete for the selected mini scenarios. The next
-stage connects these paired outcomes to scenario conditions for modeling.
+This repository includes a completed local comparison of **IDM and PDM-Closed**.
+These are upstream driving planners used to validate the experiment pipeline,
+not the causal/uplift models the team will develop.
+
+The `mini_68` experiment evaluates both planners on the same fixed 68 scenarios,
+covering 14 official challenge categories, 38 driving logs, and four map
+locations. Both runs use nuPlan 1.2.2, closed-loop reactive agents, simulation
+seed 0, and the same scoring configuration.
+
+| Planner | Successfully scored | Simulation failures | Official aggregate |
+|---|---:|---:|---:|
+| IDM | 68/68 | 0 | 0.7600884182496237 |
+| PDM-Closed | 68/68 | 0 | 0.9004246949123553 |
+
+These results describe the selected, approximately category-balanced mini
+sample. They are not a reproduction of the original benchmark cohort or a claim
+about performance across all nuPlan scenarios. A zero score is a valid outcome,
+not necessarily a simulation failure.
+
+The completed work includes dataset exploration, a deterministic scenario
+manifest, Docker runners, matched simulations, result validation, and a
+136-row outcome table in Parquet and CSV. Each row represents one planner on one
+scenario; the 136 rows form 68 matched pairs.
+
+### Review the Experiment
+
+- [Sample selection](configs/scenarios/README.md) documents the 68 scenarios,
+  sampling rules, and coverage limitations.
+- [EDA notebook](notebooks/nuplan_mini_eda.ipynb) contains the database inventory
+  and scenario exploration.
+- [Outcome CSV](artifacts/mini_68/planner_outcomes.csv) and
+  [Parquet](artifacts/mini_68/planner_outcomes.parquet) contain the matched
+  scenario-planner outcomes.
+- [Experiment metadata](artifacts/mini_68/experiment.json) records the shared
+  setup and source provenance.
+- [Tools](tools/README.md), [Docker](infra/docker/README.md), and
+  [tests](tests/README.md) document reproduction and validation.
+
+Teammates can inspect the committed sample and results without downloading
+nuPlan or rerunning simulations. From the repository root, the fast validation
+suite is:
+
+```bash
+make check
+python3 -m tools.pdm_mini_reproducer --dry-run
+python3 -m tools.pdm_mini_reproducer --planner idm --dry-run
+```
+
+These commands validate the code and manifest and print the simulation commands;
+they do not reproduce the scores. Full rerun instructions are in the
+[tools documentation](tools/README.md).
+
+---
+
+## Core Experiment
+
+The project studies planner changes using the same or controlled sets of driving scenarios.
 
 Conceptually:
 
 ```text
-                 nuPlan Scenario
-                       |
-              Scenario Features
-                       |
-             +---------+---------+
-             |                   |
-             v                   v
-      Baseline Planner     Candidate Planner
-             |                   |
-             v                   v
-        Outcome A            Outcome B
-             |                   |
-             +---------+---------+
-                       |
-                       v
-             Planner Difference
-                       |
-                       v
-               AI Modeling Layer
-                       |
-                       v
-            Regression Intelligence
+                         nuPlan
+                           |
+                           v
+                    Scenario Library
+                           |
+                           v
+                   Scenario Selection
+                           |
+                  +--------+--------+
+                  |                 |
+                  v                 v
+          Baseline Planner    Candidate Planner
+                  |                 |
+                  v                 v
+             Outcome A          Outcome B
+                  |                 |
+                  +--------+--------+
+                           |
+                           v
+                 Experiment Results
+                           |
+                           v
+                Scenario Intelligence
+                           |
+                           v
+               Regression Intelligence
+                           |
+              +------------+------------+
+              |            |            |
+              v            v            v
+           Detect       Characterize   Prioritize
+         regressions     conditions    scenarios
+              +------------+------------+
+                           |
+                           v
+                  Engineering Review
 ```
+
+The exact candidate planner is still being evaluated as part of the technical-feasibility phase.
 
 ---
 
-## IDM Reproduction Test Using nuPlan Mini
+## Scenario Intelligence
 
-This branch uses the nuPlan v1.1 mini split to test the IDM reproduction
-workflow locally. Initial data exploration is a supporting step: it verifies the
-dataset structure and produces a reproducible scenario sample for the IDM test.
-Because the mini split is not the complete benchmark evaluation set, this test
-does not by itself reproduce the published `0.76` result.
+A major part of the project is understanding **what kind of driving situation is being evaluated**.
 
-In the mini split, one SQLite `.db` file represents one driving log. Each
-database contains one row in the `log` table with metadata such as the vehicle,
-recording date, location, and map version. The initial local inspection found:
+Potential scenario information includes:
 
-- 64 SQLite databases representing 64 driving logs;
-- the same 12-table schema in every database;
-- 1,364 scenes in total, where each scene is a snippet of up to 20 seconds;
-- 518,999 LiDAR frames in total; and
-- scenario tags attached to selected LiDAR frames.
+- ego speed and state;
+- road geometry;
+- intersections;
+- merges;
+- lane changes;
+- surrounding vehicles;
+- pedestrians;
+- traffic density;
+- relative motion;
+- agent interactions;
+- temporal trajectories;
+- scenario complexity.
 
-The main data hierarchy is:
+This allows the project to move beyond:
 
-```text
-nuPlan mini split
-└── SQLite database / driving log
-    └── scene, up to 20 seconds
-        └── LiDAR frame and timestamp
-            ├── ego pose
-            ├── detected objects and tracks
-            ├── traffic-light status
-            └── zero or more scenario tags
-```
+> "Planner B is better."
 
-A scenario tag identifies a LiDAR frame as an event anchor. The nuPlan devkit
-combines that anchor with a configured extraction window to construct a
-simulation scenario. The scenario is therefore not stored as one database row;
-it is assembled from multiple time-indexed rows when requested by the devkit.
+toward statements such as:
 
-The completed mini evaluation followed these steps:
+> "Planner B improves performance in dense low-speed intersections but shows regressions in particular high-speed merging conditions."
 
-1. inventory the 64 mini databases and validate their schemas;
-2. summarize scenario categories, multilabel anchors, and temporal overlap;
-3. create and document a deterministic mini-dataset sample;
-4. run the IDM planner on that sample with the intended closed-loop reactive
-   configuration;
-5. validate the run artifacts, scenario-level metrics, failures, and aggregate
-   score.
+---
 
-### Verified Mini Result
+## AI and Modeling Direction
 
-On 2026-09-28, run `idm_mini_20260928T212421Z` completed and scored **68 of 68
-scenarios**, covering 14 categories and 38 driving logs, with **zero simulation
-failures**. The scored scenario IDs and categories matched the saved sample
-exactly, with none missing or added. Simulation took **24 minutes 26 seconds**.
+Our original proposal investigated heterogeneous treatment-effect approaches including:
 
-The official nuPlan aggregate score was **0.7600884182496237**, which rounds to
-**0.76**. This is numerical agreement on our fixed mini sample, not a reproduction
-on the paper's original evaluation cohort. The reference is Table III of
-[Karnchanachari et al. (2024), Towards Learning-Based Planning: The nuPlan
-Benchmark for Real-World Autonomous Driving](https://arxiv.org/abs/2403.04133).
+- Gradient-Boosted T-Learner;
+- Causal Forest;
+- Doubly Robust Learner;
+- Policy Learning.
 
-The run used the official `idm_planner` defaults, `closed_loop_reactive_agents`,
-the `nuplan_mini` builder, the challenge-category filter restricted to our saved
-sample, a sequential worker, and simulation seed 0. The devkit commit was
-`ce3c323af01c0d7ec5672f7832ef53f9c679aab0` (v1.2), using nuPlan v1.1 mini data.
-The sample's hash and selection rules are recorded in the
-[sample README](configs/scenarios/README.md).
+Following feedback from our project presentation, we expanded the technical investigation toward **recent AI architectures**, particularly Transformer and attention-based approaches capable of representing temporal and multi-agent driving scenarios.
 
-nuPlan computes a score for each scenario and averages those 68 scores. Thirteen
-scenarios scored zero despite completing successfully. The run also logged 18
-IDM route-fallback warnings; those scenarios remain included in the result.
+Current research areas include:
 
-Full evidence remains local under
-`artifacts/idm_mini/idm_mini_20260928T212421Z/`: `run_manifest.json`, and nested
-nuPlan outputs containing `runner_report.parquet`, `aggregator_metric/*.parquet`,
-the resolved Hydra configuration, and logs. The aggregate file contains a
-`final_score` row with the reported score. These large generated files are
-Git-ignored; this summary is included in the repository for teammates.
+- scene-level Transformers;
+- temporal Transformers;
+- trajectory Transformers;
+- agent-interaction attention;
+- graph/interaction Transformers;
+- modern conditional-effect estimation;
+- regression-ranking and prioritization methods.
 
-Large nuPlan databases and generated analysis artifacts will remain local and
-will not be committed to this repository.
+### Important
 
-### Repository Structure for the Mini Test
+The final model architectures are **not yet frozen**.
 
-```text
-infra/docker/                         Docker environment and pinned devkit
-notebooks/nuplan_mini_eda.ipynb       Scenario inventory and sample selection
-configs/scenarios/idm_mini_sample.csv Committed 68-scenario test manifest
-tools/pdm_mini_reproducer.py          Matched IDM and PDM-Closed entrypoint
-tools/build_planner_outcomes.py      Validated paired-run table and CSV export
-tools/idm_mini_reproducer.py          Preserved original IDM-only runner
-tests/                               Fast command and result-validation tests
-external/                            Optional local upstream clones, Git ignored
-artifacts/                             Generated EDA and simulation outputs
-```
+Model selection will be based on:
 
-The committed scenario manifest is the handoff between EDA and simulation. It
-contains identifiers and metadata for the exact 68 scenarios selected locally;
-it does not contain raw driving data. The reproducer reads those identifiers and
-passes them to the nuPlan scenario filter.
+- fit to the project objective;
+- compatibility with nuPlan;
+- available scenario representation;
+- reproducibility;
+- computational requirements;
+- availability of reference implementations;
+- measurable improvement over simpler approaches.
 
-See [the sample selection README](configs/scenarios/README.md) for the eligibility
-rules, sampling seed, overlap exclusion, explanation of the 68-scenario count,
-and limits on how representative the sample is.
+The project is defined by the **planner-regression problem**, not by any single model architecture.
 
-### Completed 68-Scenario IDM/PDM-Closed Comparison
+---
 
-PDM-Closed and IDM work are together on `test/idm-mini-reproduction`. PDM reuses the saved mini
-sample and adds a separate Docker image without changing the original IDM
-environment. See [Docker setup](infra/docker/README.md) and
-[PDM runner commands](tools/README.md#pdm-closed-mini-comparison) to run both
-planners over the same 68 scenarios.
+## Evaluation
 
-The full matched experiment completed **68/68 scenarios for each
-planner**, with no failures or missing/duplicate pairs. IDM scored
-**0.7600884182496237** and PDM-Closed **0.9004246949123553** on this fixed mini
-sample. Both used the same nuPlan 1.2.2 image and reactive evaluation settings.
-This is not a claim about the original full benchmark cohort.
+Evaluation will occur at multiple levels.
 
-Artifacts are organized by experiment setup:
+### 1. Planner Evaluation
+
+Measure the actual performance of baseline and candidate planners using appropriate nuPlan metrics.
+
+### 2. Model Evaluation
+
+Evaluate whether the learned system correctly identifies or estimates scenario-specific planner differences.
+
+The original proposal included:
+
+- PEHE;
+- treatment-effect RMSE;
+- policy regret.
+
+These metrics are being reviewed as the final learning task is refined.
+
+### 3. Regression Retrieval
+
+A key product-level question is:
+
+> If an engineer can investigate only a limited number of scenarios, can our system surface important regressions better than simple or random prioritization?
+
+Potential metrics include regression-retrieval precision at fixed review budgets.
+
+### 4. Robustness and Failure Analysis
+
+Later experiments may investigate performance across:
+
+- scenario categories;
+- cities;
+- traffic complexity;
+- repeated simulation runs;
+- simple versus difficult scenarios;
+- different planner configurations.
+
+The final evaluation protocol will be committed before comparative model results are used.
+
+---
+
+## System Architecture
+
+The current high-level architecture is:
 
 ```text
-artifacts/
-├── eda/
-├── mini_68/
-│   ├── idm/
-│   ├── pdm_closed/
-│   ├── planner_outcomes.parquet
-│   ├── planner_outcomes.csv
-│   └── experiment.json
-└── idm_mini/               # Preserved original nuPlan 1.2.0 reproduction
+                    +--------------------+
+                    |    nuPlan Data     |
+                    +----------+---------+
+                               |
+                               v
+                    +--------------------+
+                    | Data Ingestion &   |
+                    | Validation         |
+                    +----------+---------+
+                               |
+                               v
+                    +--------------------+
+                    | Scenario Selection |
+                    | & Representation   |
+                    +----------+---------+
+                               |
+                               v
+                  +--------------------------+
+                  | Planner Experimentation  |
+                  +------------+-------------+
+                               |
+                    +----------+----------+
+                    |                     |
+                    v                     v
+              Baseline Planner      Candidate Planner
+                    |                     |
+                    +----------+----------+
+                               |
+                               v
+                    +--------------------+
+                    | Experiment Results |
+                    +----------+---------+
+                               |
+                               v
+                    +--------------------+
+                    | AI / Modeling      |
+                    | Layer              |
+                    +----------+---------+
+                               |
+                               v
+                    +--------------------+
+                    | Regression         |
+                    | Intelligence       |
+                    +----------+---------+
+                               |
+                               v
+                    +--------------------+
+                    | Scenario Ranking   |
+                    | & Analysis         |
+                    +----------+---------+
+                               |
+                               v
+                    +--------------------+
+                    | AV Validation      |
+                    | Dashboard          |
+                    +--------------------+
 ```
 
-The combined table contains 136 scenario-planner rows. Initial-condition model
-features have **not** been extracted. The JSON records setup/source provenance;
-timestamps remain internal metadata rather than outer directory names. Original
-simulation logs and nuPlan's internal folders are preserved unchanged. Rerunning
-into an existing planner folder is refused; use an explicit new experiment name
-for another setup. See [runner documentation](tools/README.md) for commands.
+This architecture will evolve as technical feasibility is validated.
 
-Each table row represents **one scenario evaluated by one planner**, with
-identifiers, scenario metadata, planner, outcomes, and provenance. The unique
-key is `(scenario_id, planner)` within this experiment. There is no stored
-difference column: derive PDM-Closed minus IDM by pairing the two rows for a
-scenario. The 136 rows represent 68 pairs, not 136 independent scenarios.
+---
 
-For the next modeling stage, extract conditions available at simulation start,
-not future trajectory information. Scenario-category tags can describe future
-events and are not automatically safe input features. Keep all scenarios from a
-driving log together when defining train/test splits.
+## Expected Product
 
-### What Teammates Receive Through Git
-
-The code, documentation, Docker definitions, and these review artifacts are tracked:
-
-- [EDA notebook with saved summary outputs](notebooks/nuplan_mini_eda.ipynb).
-- [Fixed 68-scenario sample CSV](configs/scenarios/idm_mini_sample.csv). This is
-  identical to the EDA-generated sample; a second copy is not needed.
-- [Outcome CSV](artifacts/mini_68/planner_outcomes.csv) and
-  [Parquet](artifacts/mini_68/planner_outcomes.parquet): the same 136 outcome rows.
-- [Experiment metadata](artifacts/mini_68/experiment.json) and validated result
-  summaries for [IDM](artifacts/mini_68/idm/result.json) and
-  [PDM-Closed](artifacts/mini_68/pdm_closed/result.json).
-
-Teammates can inspect these without downloading nuPlan or running simulations.
-**Raw databases/maps, `.env`, upstream clones, the large EDA catalog, and full
-simulation logs/metrics remain excluded from Git.** Only the five listed
-`mini_68` files are allowed through the artifact ignore rules.
-
-The report/aggregate paths in `result.json` refer to local audit files, not files
-included in this snapshot. For a full audit or to rebuild the table, obtain both
-complete source-run directories from the experiment owner, including manifests,
-environments, reports, resolved configurations, and metrics. The summary JSONs
-alone are not enough to rebuild the table.
-
-### Local Setup
-
-Requirements: Python 3 for the fast checks, Make, Docker with Compose, and the
-licensed nuPlan mini databases plus maps. **No AWS account, GPU, or pretrained
-checkpoint is needed for IDM/PDM-Closed.** Images use Linux/amd64, including
-emulation on Apple Silicon; build and simulation times vary by machine.
-
-If `.env` does not exist, copy `.env.example` to `.env`. Do not overwrite an
-existing `.env`. Set `NUPLAN_HOST_DATA_ROOT` to an absolute directory with this
-layout:
+Instead of returning only an overall planner score, the final system is intended to provide information such as:
 
 ```text
-nuplan-dataset/
-├── maps/
-└── nuplan-v1.1/
-    └── splits/
-        └── mini/            # 64 .db files
+Candidate Planner Validation
+================================================
+
+Overall Performance
+Baseline Planner       0.76
+Candidate Planner      0.81
+
+Scenario Analysis
+------------------------------------------------
+Dense intersections       Improvement
+Pedestrian interactions   Improvement
+Normal lane following     Similar
+Highway merges            Regression
+High-speed lane changes   Regression
+
+Priority Regression Review
+------------------------------------------------
+Scenario 08172             HIGH
+Scenario 02918             HIGH
+Scenario 07128             MEDIUM
 ```
 
-Run the commands below from the repository root. `NUPLAN_HOST_ARTIFACT_ROOT`
-defaults to `./artifacts`, relative to that root. To store runs elsewhere, set
-it to an absolute host directory in `.env`.
+The exact interface and metrics will evolve with the project.
 
-```bash
-make check
-make pdm-docker-build
-make pdm-mini-dry-run
-make pdm-mini RUN_ARGS="--experiment mini_68_local"
-make idm-mini-matched RUN_ARGS="--experiment mini_68_local"
+---
+
+## Project Scope
+
+### In Scope
+
+- nuPlan data and scenario processing;
+- planner experimentation;
+- published baseline reproduction;
+- candidate planner comparison;
+- scenario representation;
+- modern AI/modeling research;
+- scenario-specific regression analysis;
+- regression prioritization;
+- evaluation and failure analysis;
+- experiment reproducibility;
+- offline engineering prototype/dashboard.
+
+### Out of Scope
+
+This project does **not** attempt to:
+
+- build a complete autonomous-driving stack;
+- design a production motion planner from scratch;
+- deploy software to a real autonomous vehicle;
+- replace real-world safety validation;
+- make real-time safety-critical driving decisions;
+- claim real-world safety improvements based only on simulation.
+
+---
+
+## Project Phases
+
+### M1 — Problem Definition & Technical Feasibility
+
+Current focus:
+
+- finalize product/problem definition;
+- validate nuPlan suitability;
+- investigate scenario data;
+- verify published baseline requirements;
+- investigate candidate planner options;
+- survey modern AI architectures;
+- define evaluation strategy;
+- finalize system architecture.
+
+### M2 — Data & Planner Experiment Pipeline
+
+Completed for the fixed `mini_68` development experiment:
+
+- configure reproducible nuPlan environment;
+- select development scenario subset;
+- implement scenario extraction;
+- run baseline planner;
+- run candidate planner;
+- store experiment results;
+- validate the paired experiment pipeline.
+
+### M3 — First Model
+
+Planned work:
+
+- freeze model input/output contract;
+- select first model architecture;
+- implement training pipeline;
+- train on development data;
+- evaluate on held-out scenarios;
+- establish first model results.
+
+### M4 — Expanded Modeling & Evaluation
+
+Planned work:
+
+- additional model architectures;
+- comparative experiments;
+- robustness analysis;
+- ablation studies;
+- scenario-family analysis;
+- failure analysis.
+
+### M5 — Regression Intelligence Prototype
+
+Planned work:
+
+- regression detection;
+- scenario prioritization;
+- engineering review workflow;
+- visualization/dashboard;
+- end-to-end integration;
+- reproducibility validation.
+
+---
+
+## Team
+
+| Member | Primary Ownership |
+|---|---|
+| **Ameya Khond** | Data and nuPlan scenario pipeline |
+| **Jim He** | Planner simulation and baseline experimentation |
+| **Prathamesh Mankar** | AI/model research and model development |
+| **Tejas Sawant** | Evaluation, benchmarking, and experimental analysis |
+| **Yashashree Shinde** | System architecture, integration, product, and project documentation |
+
+Responsibilities may evolve as the technical design is finalized, while individual work remains traceable through Linear issues and GitHub pull requests.
+
+---
+
+## Repository Structure
+
+```text
+.
+├── README.md
+├── Makefile
+├── artifacts/
+│   └── mini_68/               # Committed matched outcome snapshot
+├── configs/
+│   └── scenarios/             # Fixed scenario manifest and selection notes
+├── docs/
+│   └── research/
+├── infra/
+│   └── docker/                # Pinned nuPlan environments
+├── notebooks/                 # Dataset exploration
+├── tests/                     # Fast validation tests
+└── tools/                     # Planner runners and outcome assembly
 ```
 
-The final two commands run all 68 scenarios under `artifacts/mini_68_local/`,
-leaving the committed `mini_68` snapshot unchanged. Use
-`idm-mini-matched` for this comparison so IDM and PDM share the same environment.
-Confirm `valid: true`, 68 scored scenarios, and zero failures in each planner's
-`result.json`. Then use the [table-building command](tools/README.md#long-format-planner-outcome-table)
-to generate Parquet, CSV, and `experiment.json`; simulation alone does not create
-the combined table. Existing result folders/exports are never overwritten. If
-`mini_68_local` already exists, choose another name consistently for both planners
-and the table export. Do not delete the committed snapshot to rerun.
+Raw nuPlan data, complete simulation outputs, local environment files, and
+upstream repositories remain excluded from Git.
 
-### Original IDM-Only Reproduction (Historical)
+---
 
-The original nuPlan 1.2.0 workflow is retained separately. It is not the matched
-1.2.2 comparison above:
+## Project Management
 
-```bash
-make docker-build
-make idm-mini-dry-run
-make idm-mini
-```
+Project work is tracked through **Linear and GitHub**.
 
-`make idm-mini-dry-run` validates the committed manifest and prints the nuPlan
-command without starting a simulation. `make idm-mini` runs all manifest rows
-and writes generated output under `artifacts/idm_mini/` by default, or under
-`idm_mini/` inside your custom `NUPLAN_HOST_ARTIFACT_ROOT`. The container always
-uses `/artifacts/idm_mini/` for these runs. Existing run artifacts are unchanged.
+Linear is used for:
 
-The Makefile sets the Compose project directory to the repository root. If
-invoking Compose directly, use the same setting:
+- project milestones;
+- task ownership;
+- acceptance criteria;
+- blockers;
+- status tracking.
 
-```bash
-docker compose --project-directory . -f infra/docker/compose.yaml config
-```
+GitHub is used for:
+
+- implementation;
+- experiment code;
+- documentation;
+- pull requests;
+- code review;
+- reproducibility artifacts.
+
+Each substantive unit of work should be associated with an owned Linear issue and corresponding GitHub evidence.
+
+---
+
+## Current Status
+
+**Phase: M2 planner experiment pipeline completed; M3 modeling preparation**
+
+Current work is focused on:
+
+- extracting pre-simulation scenario-condition features;
+- joining those features to the matched planner outcomes;
+- defining leakage-safe train/test splits by driving log;
+- reviewing recent Transformer/attention-based approaches;
+- defining the evaluation protocol;
+- refining the system architecture.
+
+The causal/uplift models and regression-intelligence interface are not yet
+implemented. PlanTF and PLUTO are not part of the completed `mini_68`
+experiment.
+
+---
+
+## Reference
+
+Karnchanachari, N., Geromichalos, D., Tan, K. S., Li, N., Eriksen, C., Yaghoubi, S., Mehdipour, N., Bernasconi, G., Fong, W. K., Guo, Y., & Caesar, H. (2024). *Towards learning-based planning: The nuPlan benchmark for real-world autonomous driving*. IEEE International Conference on Robotics and Automation (ICRA), 629–636.
+
+---
+
+## Disclaimer
+
+This project is an academic research and engineering prototype developed as part of the SJSU MSDA capstone sequence. It is intended for offline experimentation and research and is not a production autonomous-driving or safety system.
