@@ -1,5 +1,11 @@
 # Tests
 
+Implementation lives in `src/causal_planner/`. The original tests intentionally
+retain their `tools.*` imports to check compatibility for existing checkouts and
+notebooks. `test_repository_layout.py` additionally checks package imports,
+direct/module CLI invocation, manifest resolution from another directory, and
+that unimplemented feature commands cannot produce successful-looking outputs.
+
 [`test_idm_mini_reproducer.py`](test_idm_mini_reproducer.py) checks our sample
 loader and simulation command before spending time on an actual IDM run.
 
@@ -16,9 +22,9 @@ Run from the repository root:
 make check
 ```
 
-This also checks that the EDA notebook is valid JSON. These quick checks need
-Python 3, but no Docker or downloaded nuPlan databases. They do not run a
-simulation or verify the 0.76 score.
+This also checks that the EDA notebook and draft feature schema are valid JSON.
+These quick checks need Python 3.9 or later, but no Docker or downloaded nuPlan
+databases. They do not run a simulation or verify the 0.76 score.
 
 ## PDM-Closed checks
 

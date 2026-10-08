@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "status": "scaffold",
+  "description": "Feature definitions and units will be finalized before extraction is implemented.",
+  "row_key": "scenario_id",
+  "prediction_time": "actual_simulation_start",
+  "history_seconds": null,
+  "features": [],
+  "excluded_predictors": [
+    "scenario_type",
+    "all_scenario_tags",
+    "score",
+    "run_id",
+    "planner"
+  ]
+}

@@ -6,6 +6,7 @@ PDM_COMPOSE := docker compose --project-directory . -f infra/docker/compose.pdm.
 check:
 	python3 -m unittest discover -s tests -v
 	python3 -m json.tool notebooks/nuplan_mini_eda.ipynb >/dev/null
+	python3 -m json.tool configs/features/feature_schema.json >/dev/null
 
 docker-build:
 	$(COMPOSE) build nuplan

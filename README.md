@@ -568,21 +568,45 @@ Responsibilities may evolve as the technical design is finalized, while individu
 .
 ├── README.md
 ├── Makefile
+├── pyproject.toml              # Optional editable package installation
 ├── artifacts/
-│   └── mini_68/               # Committed matched outcome snapshot
+│   ├── mini_68/               # Committed matched outcome snapshot
+│   └── pittsburgh_v1/         # Planning README only; no results yet
 ├── configs/
-│   └── scenarios/             # Fixed scenario manifest and selection notes
+│   ├── scenarios/             # Fixed scenario manifest and selection notes
+│   └── features/              # Draft feature-schema scaffold
+├── src/
+│   └── causal_planner/
+│       ├── simulation/
+│       │   ├── runners.py     # Existing planner commands and execution
+│       │   └── validation.py  # Reports and matched-run compatibility
+│       └── data/
+│           ├── scenarios.py  # Manifest loading and validation
+│           ├── outcomes.py   # Validated planner outcome assembly
+│           ├── features.py   # Scaffold: extraction not implemented yet
+│           └── dataset.py    # Scaffold: joins/splits not implemented yet
 ├── docs/
 │   └── research/
 ├── infra/
 │   └── docker/                # Pinned nuPlan environments
 ├── notebooks/                 # Dataset exploration
 ├── tests/                     # Fast validation tests
-└── tools/                     # Planner runners and outcome assembly
+└── tools/                     # Compatible CLI entry points into src/
 ```
 
 Raw nuPlan data, complete simulation outputs, local environment files, and
 upstream repositories remain excluded from Git.
+
+Existing Makefile commands and `tools.*` imports still work without installing
+the package or rebuilding Docker. Reusable implementation now lives in `src/`;
+the tools delegate to it. See [repository structure and migration](docs/repository_structure.md)
+for the file mapping and optional editable installation.
+
+`tools/extract_scenario_features.py` and `tools/build_model_dataset.py` are
+explicit scaffolds: `--help` works, but execution exits with a not-implemented
+message. No feature data or modeling table has been generated. The future
+`configs/scenarios/pittsburgh_sample.csv` will be created after cataloging and
+validating a Pittsburgh cohort; the current runners still use the mini split.
 
 ---
 

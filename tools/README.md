@@ -1,5 +1,16 @@
 # Tools
 
+These files are stable command-line entry points. The reusable implementation
+lives under `src/causal_planner/`; existing commands and public function imports
+remain available. `tools/_bootstrap.py` makes the source package importable from
+a checkout without installation. Docker already mounts the checkout, so this
+reorganization does not require an image rebuild. See the
+[module mapping and migration notes](../docs/repository_structure.md).
+
+The new `extract_scenario_features.py` and `build_model_dataset.py` commands are
+scaffolds only. Use `--help` to see their status; running them cannot create data
+and exits with status 2. Feature extraction and dataset assembly are future work.
+
 [`idm_mini_reproducer.py`](idm_mini_reproducer.py) starts our IDM mini experiment.
 It gives everyone on the team the same entry point and simulation settings.
 
