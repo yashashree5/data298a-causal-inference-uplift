@@ -1,0 +1,694 @@
+# First modeling experiment: scenario subset and field contract.
+#
+# Read by tools/validate_scenario_subset.py. Every column of the committed manifest and
+# outcome table must be declared here; undeclared columns fail validation.
+# Documentation: docs/research/nuplan_scenario_subset_and_required_fields.md
+#
+# Field attributes:
+#   name                          logical field name used in the feature contract
+#   column                        column name in a committed artifact (null if not extracted yet)
+#   artifacts                     committed artifacts that contain the column: manifest, outcomes
+#   source                        where the value comes from (artifact, nuPlan DB/devkit, or derivation)
+#   dtype                         string | int64 | float64 | bool | list[string]
+#   required                      must be present for the first modeling experiment
+#   available_before_simulation   known before either planner is simulated (not affected by treatment)
+#   model_feature                 may be used as a model input covariate
+#   status                        available (committed) | derived (computable from committed data)
+#                                 | unavailable (requires extraction from the nuPlan databases)
+#   missing_policy                see vocabularies.missing_policy
+
+schema_version: 1
+experiment: mini_68
+
+subset:
+  manifest: configs/scenarios/idm_mini_sample.csv
+  manifest_sha256: 9162d8ae9d81a1068ca40a1d925a363b16a26e8df9026be84c7726c89e5bfcb5
+  outcomes_csv: artifacts/mini_68/planner_outcomes.csv
+  outcomes_parquet: artifacts/mini_68/planner_outcomes.parquet
+  experiment_metadata: artifacts/mini_68/experiment.json
+  dataset_version: nuplan-v1.1 mini split (64 SQLite logs)
+  devkit_version: nuPlan devkit 1.2.2
+  nuplan_commit: a581fbcab373db99a13f191f94521c75c256e080
+  tuplan_garage_commit: b51d5d04fac1bd4389653b9ab2ff73ea88f435a3
+  simulation: closed_loop_reactive_agents
+  scenario_builder: nuplan_mini
+  scenario_filter: nuplan_challenge_scenarios
+  simulation_seed: 0
+  sampling_seed: 7
+  scenario_window:
+    offset_s: -3.0      # simulation starts 3 s before the tagged anchor
+    duration_s: 15.0
+  expected:
+    scenarios: 68
+    scenario_types: 14
+    logs: 38
+    maps: 4
+    rows: 136
+    planners: [idm, pdm-closed]
+
+keys:
+  scenario_id: scenario_id            # "<log_name>:<scenario_token>"
+  unit: [log_name, scenario_token]
+  row: [scenario_id, planner]
+  split_group: log_name
+
+# Pre-simulation features are computed at simulation iteration 0: the first lidar_pc at or after
+# window_start_us (= anchor_timestamp_us - 3 s), using only log data at or before that time
+# (the devkit's 2 s history buffer is allowed). Nothing after iteration 0 may enter a feature.
+feature_time: simulation_iteration_0
+
+city_by_map_name:
+  us-nv-las-vegas-strip: las_vegas
+  us-ma-boston: boston
+  us-pa-pittsburgh-hazelwood: pittsburgh
+  sg-one-north: singapore
+
+split:
+  strategy: log_grouped_k_fold
+  group: log_name
+  folds: 5
+  seed: 0
+
+vocabularies:
+  dtype: [string, int64, float64, bool, "list[string]"]
+  status: [available, derived, unavailable]
+  role: [metadata, covariate, treatment, outcome, provenance]
+  missing_policy:
+    fail_validation: Required identifier or design field; any missing value fails validation.
+    exclude_pair: Drop the scenario for BOTH planners from modeling and report it; never impute.
+    null_with_indicator: Keep the scenario, store null, and add a <name>_missing flag; never impute from outcomes.
+    not_applicable_when_succeeded: Null is expected when simulation_success is true.
+    constant_from_metadata: Experiment-level constant taken from experiment.json or the schema.
+
+# A model feature whose name or column contains any of these substrings fails the leakage check.
+forbidden_feature_patterns:
+  - score
+  - progress
+  - comfort
+  - collision
+  - compliance
+  - succeeded
+  - success
+  - failure
+  - error
+  - trajectory
+  - planner
+  - run_id
+  - window_end
+  - delta
+  - uplift
+
+groups:
+  scenario_metadata:
+    role: metadata
+    fields:
+      - name: scenario_id
+        column: scenario_id
+        artifacts: [manifest, outcomes]
+        source: manifest; "<log_name>:<scenario_token>"
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Join key between manifest, outcomes and future feature tables.
+      - name: scenario_token
+        column: scenario_token
+        artifacts: [manifest, outcomes]
+        source: manifest; lidar_pc.token of the tagged anchor (16 hex characters)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Identifier; never a model input.
+      - name: log_name
+        column: log_name
+        artifacts: [manifest, outcomes]
+        source: manifest; nuPlan log name (= SQLite file stem)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Log identifier used for log-grouped splits. Identifier; never a model input.
+      - name: log_token
+        column: null
+        artifacts: []
+        source: nuPlan DB log.token for the scenario's db_file
+        dtype: string
+        required: false
+        available_before_simulation: true
+        model_feature: false
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: >
+          Not stored in the committed manifest. log_name is the log key until extraction reads
+          log.token (sqlite, read-only) from each of the 38 log databases.
+      - name: db_file
+        column: db_file
+        artifacts: [manifest]
+        source: manifest; "<log_name>.db"
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Locates the SQLite log used by the scenario builder and feature extraction.
+      - name: scenario_type
+        column: scenario_type
+        artifacts: [manifest, outcomes]
+        source: manifest; assigned nuPlan challenge category (lexically last matching scenario_tag.type)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: >
+          This is the selection group (5-per-category design). Not affected by the planner, so it is
+          valid for stratification and subgroup reporting, but tags are assigned at the anchor
+          (3 s after simulation start) and summarize the logged expert's behavior, so it is not a
+          default model input.
+      - name: all_scenario_tags
+        column: all_scenario_tags
+        artifacts: [manifest]
+        source: manifest; all scenario_tag.type values at the anchor, "|"-separated
+        dtype: list[string]
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Same look-ahead caveat as scenario_type.
+      - name: map_name
+        column: map_name
+        artifacts: [manifest, outcomes]
+        source: manifest; log.map_version
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: available
+        missing_policy: fail_validation
+        notes: Categorical covariate (4 levels; 52 of 68 scenarios are Las Vegas).
+      - name: city
+        column: null
+        artifacts: []
+        source: derived from map_name via city_by_map_name; confirm against log.location at extraction
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: derived
+        missing_policy: fail_validation
+        notes: One-to-one with map_name; use map_name as the feature to avoid a duplicate column.
+      - name: scenario_timestamp
+        column: anchor_timestamp_us
+        artifacts: [manifest, outcomes]
+        source: manifest; lidar_pc.timestamp of the anchor (microseconds)
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Absolute time identifies the log; not a model input.
+      - name: window_start_us
+        column: window_start_us
+        artifacts: [manifest, outcomes]
+        source: manifest; anchor_timestamp_us - 3 s
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Simulation start; reference time for every pre-simulation feature.
+      - name: window_end_us
+        column: window_end_us
+        artifacts: [manifest, outcomes]
+        source: manifest; window_start_us + 15 s
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: End of the evaluated window; anything measured up to it is future relative to the start.
+      - name: time_block_id
+        column: time_block_id
+        artifacts: [manifest]
+        source: manifest; "<log_name>:<15 s block index>" from the EDA notebook
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Selection bookkeeping; encodes the log identity.
+      - name: dataset_version
+        column: null
+        artifacts: []
+        source: subset.dataset_version (scenario_builder=nuplan_mini in experiment.json)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: derived
+        missing_policy: constant_from_metadata
+        notes: Constant for the whole subset.
+
+  ego_scene_pre_simulation:
+    role: covariate
+    fields:
+      - name: ego_x
+        column: null
+        artifacts: []
+        source: devkit NuPlanScenario.initial_ego_state.rear_axle.x (iteration 0)
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: unavailable
+        missing_policy: exclude_pair
+        notes: Global map coordinate; needed for map/agent queries but identifies location, so not a model input.
+      - name: ego_y
+        column: null
+        artifacts: []
+        source: devkit initial_ego_state.rear_axle.y (iteration 0)
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: unavailable
+        missing_policy: exclude_pair
+        notes: Same as ego_x.
+      - name: ego_heading
+        column: null
+        artifacts: []
+        source: devkit initial_ego_state.rear_axle.heading (iteration 0)
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: unavailable
+        missing_policy: exclude_pair
+        notes: Global-frame angle; use it to compute lane-relative quantities, not as a raw input.
+      - name: ego_speed
+        column: null
+        artifacts: []
+        source: devkit initial_ego_state.dynamic_car_state.speed (m/s)
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: ego_acceleration
+        column: null
+        artifacts: []
+        source: devkit initial_ego_state.dynamic_car_state.acceleration (m/s^2)
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: ego_yaw_rate
+        column: null
+        artifacts: []
+        source: devkit initial_ego_state.dynamic_car_state.angular_velocity (rad/s)
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: route_length_m
+        column: null
+        artifacts: []
+        source: sum of baseline-path lengths of scenario.get_route_roadblock_ids() roadblocks (map API)
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: The route is a planner input given before simulation, so it is not an outcome.
+      - name: lane_id
+        column: null
+        artifacts: []
+        source: map API lane or lane connector containing the ego position at iteration 0
+        dtype: string
+        required: false
+        available_before_simulation: true
+        model_feature: false
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: High-cardinality map identifier; memorizes location, so not a model input.
+      - name: lane_type
+        column: null
+        artifacts: []
+        source: map layer of lane_id (lane | lane_connector)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: in_intersection
+        column: null
+        artifacts: []
+        source: map_api.is_in_layer(ego point, SemanticMapLayer.INTERSECTION)
+        dtype: bool
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: traffic_light_state
+        column: null
+        artifacts: []
+        source: scenario.get_traffic_light_status_at_iteration(0) for the ego's current or next lane connector
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: Values green | yellow | red | unknown | none; "none" means no controlling light, not missing.
+      - name: num_tracked_agents
+        column: null
+        artifacts: []
+        source: len(scenario.initial_tracked_objects.tracked_objects)
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: num_vehicles
+        column: null
+        artifacts: []
+        source: initial tracked objects with TrackedObjectType.VEHICLE
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: num_pedestrians
+        column: null
+        artifacts: []
+        source: initial tracked objects with TrackedObjectType.PEDESTRIAN
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: nearest_agent_distance_m
+        column: null
+        artifacts: []
+        source: minimum center distance from ego to any vehicle, pedestrian or bicycle at iteration 0
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: Null (with indicator) when no agent is present.
+      - name: nearest_agent_relative_speed_mps
+        column: null
+        artifacts: []
+        source: closing speed between ego and the nearest agent at iteration 0
+        dtype: float64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: agents_within_50m
+        column: null
+        artifacts: []
+        source: count of tracked agents within 50 m of ego at iteration 0 (traffic density)
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: exclude_pair
+      - name: lane_curvature
+        column: null
+        artifacts: []
+        source: mean curvature of the ego lane baseline path over the next 50 m (map API)
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+
+  planner_treatment:
+    role: treatment
+    fields:
+      - name: planner_name
+        column: planner
+        artifacts: [outcomes]
+        source: outcomes; planner identity (idm | pdm-closed)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+        notes: Treatment indicator, not a covariate.
+      - name: planner_configuration
+        column: null
+        artifacts: []
+        source: tools/pdm_mini_reproducer.py PLANNERS mapping (idm_planner | pdm_closed_planner); run_manifest.json command
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: derived
+        missing_policy: fail_validation
+      - name: simulation_seed
+        column: null
+        artifacts: []
+        source: experiment.json simulation_seed
+        dtype: int64
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: derived
+        missing_policy: constant_from_metadata
+        notes: Constant 0 for both planners.
+
+  post_simulation_outcomes:
+    role: outcome
+    fields:
+      - name: overall_score
+        column: null
+        artifacts: []
+        source: experiment.json source_runs.<planner>.official_score (mean of scenario_score)
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: derived
+        missing_policy: fail_validation
+        notes: Experiment-level aggregate per planner, not a row value.
+      - name: scenario_score
+        column: score
+        artifacts: [outcomes]
+        source: outcomes; nuPlan closed-loop reactive weighted score for the scenario, in [0, 1]
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+        notes: Primary outcome. A zero score is a valid outcome, not a failure.
+      - name: closed_loop_reactive_score
+        column: null
+        artifacts: []
+        source: alias of scenario_score (simulation=closed_loop_reactive_agents)
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: derived
+        missing_policy: exclude_pair
+        notes: Same value as scenario_score; do not use both as separate targets.
+      - name: progress_score
+        column: ego_progress_along_expert_route
+        artifacts: [outcomes]
+        source: outcomes; nuPlan metric score
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: making_progress
+        column: ego_is_making_progress
+        artifacts: [outcomes]
+        source: outcomes; nuPlan multiplier metric (0 or 1)
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: comfort_score
+        column: ego_is_comfortable
+        artifacts: [outcomes]
+        source: outcomes; nuPlan metric score
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: no_at_fault_collision_score
+        column: no_ego_at_fault_collisions
+        artifacts: [outcomes]
+        source: outcomes; nuPlan multiplier metric (1 = none; lower = at-fault collision)
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+        notes: A metric score, not a raw collision count.
+      - name: at_fault_collision
+        column: null
+        artifacts: []
+        source: derived; no_ego_at_fault_collisions < 1
+        dtype: bool
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: derived
+        missing_policy: exclude_pair
+      - name: time_to_collision_within_bound
+        column: time_to_collision_within_bound
+        artifacts: [outcomes]
+        source: outcomes; nuPlan metric score
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: drivable_area_compliance
+        column: drivable_area_compliance
+        artifacts: [outcomes]
+        source: outcomes; nuPlan multiplier metric
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: driving_direction_compliance
+        column: driving_direction_compliance
+        artifacts: [outcomes]
+        source: outcomes; nuPlan multiplier metric
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: speed_limit_compliance
+        column: speed_limit_compliance
+        artifacts: [outcomes]
+        source: outcomes; nuPlan metric score
+        dtype: float64
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: exclude_pair
+      - name: simulation_success
+        column: succeeded
+        artifacts: [outcomes]
+        source: outcomes; runner_report.succeeded
+        dtype: bool
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+      - name: failure_reason
+        column: error_message
+        artifacts: [outcomes]
+        source: outcomes; runner_report.error_message
+        dtype: string
+        required: false
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: not_applicable_when_succeeded
+      - name: score_delta
+        column: null
+        artifacts: []
+        source: derived per pair; scenario_score(pdm-closed) - scenario_score(idm)
+        dtype: float64
+        required: false
+        available_before_simulation: false
+        model_feature: false
+        status: derived
+        missing_policy: exclude_pair
+        notes: Uplift target for later analysis; computed by pairing rows, never stored as a feature.
+
+  provenance:
+    role: provenance
+    fields:
+      - name: run_id
+        column: run_id
+        artifacts: [outcomes]
+        source: outcomes; nuPlan experiment_uid of the source run
+        dtype: string
+        required: true
+        available_before_simulation: false
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+      - name: sample_sha256
+        column: sample_sha256
+        artifacts: [outcomes]
+        source: outcomes; SHA-256 of the manifest used by the run
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+      - name: nuplan_commit
+        column: nuplan_commit
+        artifacts: [outcomes]
+        source: outcomes; nuPlan devkit commit
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
+      - name: tuplan_garage_commit
+        column: tuplan_garage_commit
+        artifacts: [outcomes]
+        source: outcomes; tuPlan Garage commit (PDM-Closed implementation)
+        dtype: string
+        required: true
+        available_before_simulation: true
+        model_feature: false
+        status: available
+        missing_policy: fail_validation
