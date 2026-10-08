@@ -1,0 +1,10 @@
+{
+  "source_repository": "https://github.com/autonomousvision/tuplan_garage",
+  "source_folder": "https://drive.google.com/drive/folders/1LLdunqyvQQuBuknzmf7KMIJiA2grLYB2",
+  "downloaded_utc": "2026-10-08",
+  "files": {
+    "pdm_offset_checkpoint.ckpt": {"google_drive_id": "1lt8_951VY-2AJBHddgl11KDXJvQVHjvP", "sha256": "7fdc0a2736093289ae856817ee90b2e30d74f316a64f21f5e8f2555fb9895ac3", "size_bytes": 19000210},
+    "urbandriver_checkpoint.ckpt": {"google_drive_id": "1qde8EmDjTBfFAcl_J_bIOgRWp-q6gTzL", "sha256": "0965dee32c3a374a28c7d77e2c4d1b91cd3b0e2f4c11fcee5d313168b16ad4d6", "size_bytes": 34843549},
+    "gc_pgp_checkpoint.ckpt": {"google_drive_id": "1FtV7fOSEuPo3IGvFLSL8UCKA3BXGvDkK", "sha256": "6c863cf1add65f98ce02281a7dfbba3d11f10342c25984a2d0b1524ac9db3fb4", "size_bytes": 4916655}
+  }
+}

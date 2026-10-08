@@ -1,0 +1,25 @@
+{
+  "scenario_count": 65,
+  "category_counts": {
+    "behind_long_vehicle": 5,
+    "changing_lane": 5,
+    "following_lane_with_lead": 5,
+    "high_lateral_acceleration": 5,
+    "high_magnitude_speed": 5,
+    "low_magnitude_speed": 5,
+    "near_multiple_vehicles": 5,
+    "starting_left_turn": 5,
+    "starting_right_turn": 5,
+    "starting_straight_traffic_light_intersection_traversal": 5,
+    "stationary_in_traffic": 5,
+    "stopping_with_lead": 5,
+    "waiting_for_pedestrian_to_cross": 5
+  },
+  "source_recordings": 48,
+  "seed": 7,
+  "quota_per_available_category": 5,
+  "excluded_mini_source_recordings": true,
+  "overlap_group": "source_recording",
+  "sample_sha256": "0c4d1e0398f396afaad98092455f7bc11b049061548e183bed0f5944d1d5be0c",
+  "catalog_sha256": "42daa9df7fc8e318add79ceea0f5fe06a857933fa8530a57db84b1c0f1ab0e96"
+}

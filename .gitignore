@@ -8,6 +8,11 @@ __pycache__/
 /build/
 /dist/
 
+# Learned planner weights are local, read-only inputs and must not be committed.
+/checkpoints/*
+!/checkpoints/README.md
+!/checkpoints/provenance.json
+
 # Local dependencies and generated outputs.
 /external/
 # Share only the reviewed 68-scenario result snapshot, not full run directories.

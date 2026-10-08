@@ -5,7 +5,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from tools.build_planner_outcomes import MATCHED_CONFIG, exactly_one, recorded_run_id, save_csv, validate_pair, wait_for_runs
+from tools.build_planner_outcomes import (
+    MATCHED_CONFIG, exactly_one, parse_planner_runs, recorded_run_id, save_csv,
+    validate_pair, wait_for_runs,
+)
+from causal_planner.data.outcomes import validate_model_identity
 
 
 class PlannerOutcomesTest(unittest.TestCase):
@@ -22,6 +26,53 @@ class PlannerOutcomesTest(unittest.TestCase):
 
     def test_same_experiment_accepts_different_output_filenames(self):
         validate_pair(self.manifests, self.configs, self.environments)
+
+    def test_same_experiment_accepts_more_than_two_planners(self):
+        manifests = self.manifests + [copy.deepcopy(self.manifests[0])]
+        configs = self.configs + [copy.deepcopy(self.configs[0])]
+        configs[2]["metric_aggregator"]["weighted"]["file_name"] = "third"
+        validate_pair(manifests, configs, self.environments + ["same packages"])
+
+    def test_late_planner_mismatch_is_not_ignored(self):
+        manifests = self.manifests + [copy.deepcopy(self.manifests[0])]
+        manifests[2]["sample_sha256"] = "different"
+        with self.assertRaisesRegex(ValueError, "sample_sha256"):
+            validate_pair(manifests, self.configs + [self.configs[0]], self.environments + ["same packages"])
+
+    def test_two_ml_planners_cannot_be_confused(self):
+        config = {"model": {"_target_": "tuplan_garage.planning.training.modeling.models.pgp.pgp_model.PGPModel"}}
+        validate_model_identity("gc-pgp", config)
+        with self.assertRaisesRegex(ValueError, "urban-driver"):
+            validate_model_identity("urban-driver", config)
+
+    def test_parse_repeatable_planner_runs(self):
+        runs = parse_planner_runs([
+            "idm=/runs/idm",
+            "pdm-closed=/runs/pdm",
+            "pdm-hybrid=/runs/hybrid",
+            "urban-driver=/runs/urban",
+            "gc-pgp=/runs/gc",
+        ])
+        self.assertEqual(5, len(runs))
+        self.assertEqual(Path("/runs/gc"), runs["gc-pgp"])
+
+    def test_parse_planner_runs_retains_legacy_pair(self):
+        runs = parse_planner_runs([], Path("/runs/idm"), Path("/runs/pdm"))
+        self.assertEqual(
+            {"idm": Path("/runs/idm"), "pdm-closed": Path("/runs/pdm")}, runs
+        )
+
+    def test_parse_planner_runs_rejects_invalid_or_duplicate_input(self):
+        with self.assertRaisesRegex(ValueError, "At least two"):
+            parse_planner_runs(["idm=/runs/idm"])
+        with self.assertRaisesRegex(ValueError, "Unsupported"):
+            parse_planner_runs(["idm=/runs/idm", "unknown=/runs/unknown"])
+        with self.assertRaisesRegex(ValueError, "Duplicate"):
+            parse_planner_runs(
+                ["idm=/runs/other"], Path("/runs/idm"), Path("/runs/pdm")
+            )
+        with self.assertRaisesRegex(ValueError, "provided together"):
+            parse_planner_runs([], Path("/runs/idm"), None)
 
     def test_run_id_survives_directory_relocation(self):
         self.assertEqual("original", recorded_run_id({"command": ["python", "experiment_uid=original"]}))

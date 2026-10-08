@@ -1,0 +1,34 @@
+name: data298a-additional-planners
+
+services:
+  planner:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.pdm
+    image: data298a/pdm-closed-mini:1.0
+    environment:
+      NUPLAN_DATA_ROOT: /data
+      NUPLAN_MAPS_ROOT: /data/maps
+      NUPLAN_EXP_ROOT: /artifacts/nuplan
+      PLANNER_OUTPUT_ROOT: /artifacts
+      PLANNER_CHECKPOINT_ROOT: /checkpoints
+    volumes:
+      - type: bind
+        source: ${NUPLAN_HOST_DATA_ROOT:?Set NUPLAN_HOST_DATA_ROOT in .env}
+        target: /data
+        read_only: true
+      - type: bind
+        source: ${ADDITIONAL_PLANNER_HOST_ARTIFACT_ROOT:-./artifacts/additional_planners}
+        target: /artifacts
+      - type: bind
+        source: ${PLANNER_HOST_CHECKPOINT_ROOT:-./checkpoints}
+        target: /checkpoints
+        read_only: true
+      - type: bind
+        source: .
+        target: /workspace
+        read_only: true
+    tmpfs:
+      - /data/maps/.maplocks
+    working_dir: /workspace

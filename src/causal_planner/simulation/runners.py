@@ -1,4 +1,4 @@
-"""Construct and execute the existing IDM and matched PDM/IDM commands."""
+"""Construct and execute matched nuPlan planner commands."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Dict, List, Sequence
+from typing import Dict, List, Optional, Sequence
 
 from causal_planner.data.scenarios import DEFAULT_SAMPLE, PROJECT_ROOT, load_scenarios
 from causal_planner.simulation.validation import summarize_run
@@ -20,7 +20,23 @@ from causal_planner.simulation.validation import summarize_run
 DEFAULT_DEVKIT_ROOT = PROJECT_ROOT / "external" / "nuplan-devkit"
 DEFAULT_OUTPUT_ROOT = Path(os.getenv("IDM_OUTPUT_ROOT", PROJECT_ROOT / "artifacts" / "idm_mini"))
 
-PLANNERS = {"pdm-closed": ("pdm_closed_planner", "PDMClosedPlanner"), "idm": ("idm_planner", "IDMPlanner")}
+PLANNERS = {
+    "idm": ("idm_planner", "IDMPlanner"),
+    "pdm-closed": ("pdm_closed_planner", "PDMClosedPlanner"),
+    "pdm-hybrid": ("pdm_hybrid_planner", "PDMHybridPlanner"),
+    "urban-driver": ("ml_planner", "MLPlanner"),
+    "gc-pgp": ("ml_planner", "MLPlanner"),
+}
+CHECKPOINT_FILES = {
+    "pdm-hybrid": "pdm_offset_checkpoint.ckpt",
+    "urban-driver": "urbandriver_checkpoint.ckpt",
+    "gc-pgp": "gc_pgp_checkpoint.ckpt",
+}
+PLANNER_MODEL_CONFIGS = {
+    "urban-driver": "urban_driver_open_loop_model",
+    "gc-pgp": "gc_pgp_model",
+}
+DEFAULT_CHECKPOINT_ROOT = Path(os.getenv("PLANNER_CHECKPOINT_ROOT", "/checkpoints"))
 SEARCH_PATH = (
     "hydra.searchpath=[pkg://nuplan.planning.script.config.common,"
     "pkg://nuplan.planning.script.experiments,"
@@ -40,13 +56,16 @@ def build_idm_command(
     python_executable: str,
     run_root: Path,
     experiment_uid: str,
+    dataset_split: str = "mini",
 ) -> List[str]:
     """Build the pinned nuPlan closed-loop IDM simulation command."""
     scenario_tokens = [row["scenario_token"] for row in scenarios]
     log_names = sorted({row["log_name"] for row in scenarios})
     simulation_script = devkit_root / "nuplan" / "planning" / "script" / "run_simulation.py"
 
-    return [
+    if dataset_split not in {"mini", "train_pittsburgh"}:
+        raise ValueError(f"Unsupported dataset split: {dataset_split}")
+    command = [
         python_executable,
         str(simulation_script),
         "+simulation=closed_loop_reactive_agents",
@@ -64,14 +83,70 @@ def build_idm_command(
         "log_config=true",
         "verbose=true",
     ]
+    if dataset_split == "train_pittsburgh":
+        split_root = "${oc.env:NUPLAN_DATA_ROOT}/nuplan-v1.1/splits/train_pittsburgh"
+        db_files = sorted({f"{split_root}/{row['db_file']}" for row in scenarios})
+        command += [f"scenario_builder.data_root={split_root}",
+                    f"scenario_builder.db_files={hydra_list(db_files)}"]
+    return command
 
 
-def build_pdm_command(scenarios, devkit_root, python_executable, run_root, experiment_uid, planner="pdm-closed"):
-    """Reuse the IDM settings; change only the planner and output experiment name."""
-    command = build_idm_command(scenarios, devkit_root, python_executable, run_root, experiment_uid)
+def planner_checkpoint_path(planner: str, checkpoint_root: Path) -> Optional[Path]:
+    """Return the expected checkpoint path for a learned planner."""
+    filename = CHECKPOINT_FILES.get(planner)
+    return checkpoint_root / filename if filename else None
+
+
+def planner_overrides(planner: str, checkpoint_root: Path) -> List[str]:
+    """Return planner-specific Hydra overrides without changing evaluation settings."""
+    checkpoint = planner_checkpoint_path(planner, checkpoint_root)
+    if planner == "pdm-hybrid":
+        return [f"planner.pdm_hybrid_planner.checkpoint_path={checkpoint}"]
+    if planner == "urban-driver":
+        return [
+            "planner.ml_planner.model_config=${model}",
+            f"planner.ml_planner.checkpoint_path={checkpoint}",
+            f"model={PLANNER_MODEL_CONFIGS[planner]}",
+        ]
+    if planner == "gc-pgp":
+        return [
+            "planner.ml_planner.model_config=${model}",
+            f"planner.ml_planner.checkpoint_path={checkpoint}",
+            f"model={PLANNER_MODEL_CONFIGS[planner]}",
+            "model.aggregator.pre_train=false",
+        ]
+    return []
+
+
+def build_pdm_command(
+    scenarios,
+    devkit_root,
+    python_executable,
+    run_root,
+    experiment_uid,
+    planner="pdm-closed",
+    checkpoint_root=DEFAULT_CHECKPOINT_ROOT,
+    dataset_split="mini",
+):
+    """Reuse matched settings while selecting a planner and its checkpoint."""
+    if planner not in PLANNERS:
+        raise ValueError(f"Unsupported planner: {planner}")
+    command = build_idm_command(
+        scenarios, devkit_root, python_executable, run_root, experiment_uid, dataset_split
+    )
     command[command.index("planner=idm_planner")] = f"planner={PLANNERS[planner][0]}"
     command[command.index("experiment_name=idm_mini_reproduction")] = "experiment_name=planner_comparison"
-    return command + [SEARCH_PATH]
+    return command + planner_overrides(planner, Path(checkpoint_root)) + [SEARCH_PATH]
+
+
+def sha256_file(path: Path) -> str:
+    """Hash a potentially large checkpoint without loading it all into memory."""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
 
 def checkout_revision(root):
     """Record the actual upstream commit, rejecting locally edited upstream code."""
@@ -165,6 +240,13 @@ def pdm_main():
     parser.add_argument("--limit", type=int, help="First N saved rows; omit to run all 68")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--experiment", help="Experiment folder name; defaults to mini_<selected count>")
+    parser.add_argument("--dataset-split", choices=["mini", "train_pittsburgh"], default="mini")
+    parser.add_argument(
+        "--checkpoint-root",
+        type=Path,
+        default=DEFAULT_CHECKPOINT_ROOT,
+        help="Directory containing official planner checkpoints (default: /checkpoints in Docker)",
+    )
     parser.add_argument("--output-root", type=Path,
                         default=Path(os.getenv("PLANNER_OUTPUT_ROOT", PROJECT_ROOT / "artifacts")))
     args = parser.parse_args()
@@ -176,10 +258,15 @@ def pdm_main():
     devkit = Path(os.getenv("NUPLAN_DEVKIT_ROOT", PROJECT_ROOT / "external" / "nuplan-devkit")).resolve()
     garage = Path(os.getenv("TUPLAN_GARAGE_ROOT", PROJECT_ROOT / "external" / "tuplan_garage")).resolve()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    uid = f"{args.planner}_mini_{stamp}"
-    experiment = args.experiment or f"mini_{len(scenarios)}"
+    location = "pittsburgh" if args.dataset_split == "train_pittsburgh" else "mini"
+    uid = f"{args.planner}_{location}_{stamp}"
+    experiment = args.experiment or f"{location}_{len(scenarios)}"
     run_root = experiment_run_root(args.output_root.expanduser().resolve(), experiment, args.planner)
-    command = build_pdm_command(scenarios, devkit, sys.executable, run_root, uid, args.planner)
+    checkpoint_root = args.checkpoint_root.expanduser().resolve()
+    command = build_pdm_command(
+        scenarios, devkit, sys.executable, run_root, uid, args.planner, checkpoint_root,
+        args.dataset_split,
+    )
     print(f"Validated {len(scenarios)} scenarios; planner={args.planner}", flush=True)
     print(shlex.join(command), flush=True)
     if args.dry_run:
@@ -188,13 +275,29 @@ def pdm_main():
     if run_root.exists():
         raise FileExistsError(f"Results already exist at {run_root}. Use a new --experiment name; nothing was overwritten.")
 
+    checkpoint_path = planner_checkpoint_path(args.planner, checkpoint_root)
+    checkpoint = None
+    if checkpoint_path:
+        if not checkpoint_path.is_file():
+            raise FileNotFoundError(
+                f"Checkpoint for {args.planner} not found: {checkpoint_path}. "
+                "Mount the official checkpoint directory read-only."
+            )
+        checkpoint = {
+            "path": str(checkpoint_path),
+            "filename": checkpoint_path.name,
+            "size_bytes": checkpoint_path.stat().st_size,
+            "sha256": sha256_file(checkpoint_path),
+        }
+
     for name in ["NUPLAN_DATA_ROOT", "NUPLAN_MAPS_ROOT"]:
         if not os.getenv(name) or not Path(os.environ[name]).is_dir():
             raise RuntimeError(f"Set {name} to an existing directory (use the Docker service)")
     if not Path(command[1]).is_file():
         raise FileNotFoundError(command[1])
     for row in scenarios:
-        db = Path(os.environ["NUPLAN_DATA_ROOT"]) / "nuplan-v1.1" / "splits" / "mini" / row["db_file"]
+        db = (Path(os.environ["NUPLAN_DATA_ROOT"]) / "nuplan-v1.1" / "splits" /
+              args.dataset_split / row["db_file"])
         if not db.is_file():
             raise FileNotFoundError(db)
     manifest = {
@@ -202,12 +305,14 @@ def pdm_main():
         "run_id": uid,
         "experiment": experiment,
         "planner": args.planner,
+        "dataset_split": args.dataset_split,
         "sample": str(sample),
         "sample_sha256": hashlib.sha256(sample.read_bytes()).hexdigest(),
         "scenario_count": len(scenarios),
         "selected_scenarios": scenarios,
         "nuplan_commit": checkout_revision(devkit),
         "tuplan_garage_commit": checkout_revision(garage),
+        "checkpoint": checkpoint,
         "command": command,
         "data_root": os.environ["NUPLAN_DATA_ROOT"],
         "maps_root": os.environ["NUPLAN_MAPS_ROOT"],

@@ -12,20 +12,22 @@ MATCHED_CONFIG = [
 
 
 def validate_pair(manifests, configs, environments):
-    """Reject different samples, revisions, packages or evaluation settings."""
+    """Reject incompatible samples, revisions, packages or evaluation settings."""
+    if len(manifests) < 2 or len(configs) != len(manifests) or len(environments) != len(manifests):
+        raise ValueError("At least two complete planner runs are required")
     for key in ["sample_sha256", "selected_scenarios", "scenario_count", "nuplan_commit",
                 "tuplan_garage_commit", "data_root", "maps_root", "python"]:
-        if manifests[0][key] != manifests[1][key]:
+        if any(manifest[key] != manifests[0][key] for manifest in manifests[1:]):
             raise ValueError(f"Run mismatch: {key}")
-    if environments[0] != environments[1]:
+    if any(environment != environments[0] for environment in environments[1:]):
         raise ValueError("Run mismatch: installed packages")
     for key in MATCHED_CONFIG:
-        if configs[0][key] != configs[1][key]:
+        if any(config[key] != configs[0][key] for config in configs[1:]):
             raise ValueError(f"Run mismatch: simulation setting {key}")
     # Aggregate filenames contain a run timestamp, not a scientific parameter.
     aggregates = [{name: {key: value for key, value in config.items() if key != "file_name"}
                    for name, config in item["metric_aggregator"].items()} for item in configs]
-    if aggregates[0] != aggregates[1]:
+    if any(aggregate != aggregates[0] for aggregate in aggregates[1:]):
         raise ValueError("Run mismatch: metric aggregation")
 
 

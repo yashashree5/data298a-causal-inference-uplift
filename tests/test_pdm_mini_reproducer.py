@@ -3,7 +3,10 @@ from pathlib import Path
 import unittest
 
 from tools.idm_mini_reproducer import DEFAULT_SAMPLE, load_scenarios
-from tools.pdm_mini_reproducer import build_command, experiment_run_root, validate_results
+from tools.pdm_mini_reproducer import (
+    CHECKPOINT_FILES, PLANNERS, build_command, experiment_run_root,
+    planner_checkpoint_path, validate_results,
+)
 
 
 class PdmMiniReproducerTest(unittest.TestCase):
@@ -36,6 +39,68 @@ class PdmMiniReproducerTest(unittest.TestCase):
             self.assertIn(row["scenario_token"], token_arg)
         self.assertIn("pkg://tuplan_garage.planning.script.config.simulation", pdm[-1])
 
+    def test_additional_planners_use_expected_configs_and_checkpoints(self):
+        args = (self.scenarios, Path("/opt/nuplan-devkit"), "python", Path("/artifacts/run"), "run")
+        root = Path("/checkpoints")
+
+        hybrid = build_command(*args, planner="pdm-hybrid", checkpoint_root=root)
+        self.assertIn("planner=pdm_hybrid_planner", hybrid)
+        self.assertIn(
+            "planner.pdm_hybrid_planner.checkpoint_path=/checkpoints/pdm_offset_checkpoint.ckpt",
+            hybrid,
+        )
+
+        urban = build_command(*args, planner="urban-driver", checkpoint_root=root)
+        self.assertIn("planner=ml_planner", urban)
+        self.assertIn("planner.ml_planner.model_config=${model}", urban)
+        self.assertIn("model=urban_driver_open_loop_model", urban)
+        self.assertIn(
+            "planner.ml_planner.checkpoint_path=/checkpoints/urbandriver_checkpoint.ckpt",
+            urban,
+        )
+
+        gc_pgp = build_command(*args, planner="gc-pgp", checkpoint_root=root)
+        self.assertIn("planner=ml_planner", gc_pgp)
+        self.assertIn("model=gc_pgp_model", gc_pgp)
+        self.assertIn("model.aggregator.pre_train=false", gc_pgp)
+        self.assertIn(
+            "planner.ml_planner.checkpoint_path=/checkpoints/gc_pgp_checkpoint.ckpt",
+            gc_pgp,
+        )
+
+    def test_pittsburgh_command_uses_only_manifest_databases(self):
+        args = (self.scenarios, Path("/opt/nuplan-devkit"), "python",
+                Path("/artifacts/run"), "run")
+        command = build_command(*args, planner="idm", dataset_split="train_pittsburgh")
+        self.assertIn(
+            "scenario_builder.data_root=${oc.env:NUPLAN_DATA_ROOT}/nuplan-v1.1/splits/train_pittsburgh",
+            command,
+        )
+        db_argument = next(item for item in command if item.startswith("scenario_builder.db_files="))
+        for row in self.scenarios:
+            self.assertIn(row["db_file"], db_argument)
+        with self.assertRaisesRegex(ValueError, "Unsupported dataset split"):
+            build_command(*args, planner="idm", dataset_split="unknown")
+
+    def test_planner_registry_and_checkpoint_paths(self):
+        self.assertEqual(
+            {"idm", "pdm-closed", "pdm-hybrid", "urban-driver", "gc-pgp"},
+            set(PLANNERS),
+        )
+        self.assertEqual(
+            {"pdm-hybrid", "urban-driver", "gc-pgp"}, set(CHECKPOINT_FILES)
+        )
+        self.assertIsNone(planner_checkpoint_path("idm", Path("/checkpoints")))
+        self.assertEqual(
+            Path("/checkpoints/gc_pgp_checkpoint.ckpt"),
+            planner_checkpoint_path("gc-pgp", Path("/checkpoints")),
+        )
+
+    def test_unknown_planner_is_rejected(self):
+        args = (self.scenarios, Path("/opt/nuplan-devkit"), "python", Path("/artifacts/run"), "run")
+        with self.assertRaisesRegex(ValueError, "Unsupported planner"):
+            build_command(*args, planner="unknown")
+
     def test_complete_run_passes(self):
         self.assertTrue(self.validate()["valid"])
         self.assertEqual(0.8, self.validate()["official_score"])
@@ -45,6 +110,8 @@ class PdmMiniReproducerTest(unittest.TestCase):
                          experiment_run_root(Path("/artifacts"), "mini_68", "idm"))
         self.assertEqual(Path("/artifacts/mini_68/pdm_closed"),
                          experiment_run_root(Path("/artifacts"), "mini_68", "pdm-closed"))
+        self.assertEqual(Path("/artifacts/mini_68/gc_pgp"),
+                         experiment_run_root(Path("/artifacts"), "mini_68", "gc-pgp"))
         for name in ["../escape", "/absolute", "", "two/levels"]:
             with self.subTest(name=name), self.assertRaises(ValueError):
                 experiment_run_root(Path("/artifacts"), name, "idm")
