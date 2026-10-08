@@ -12,9 +12,9 @@ The matched mini experiment supports five logical planners on the unchanged
 | `gc-pgp` | MLPlanner with GC-PGP model | `gc_pgp_checkpoint.ckpt` |
 
 The learned planners use official tuPlan Garage checkpoints. Keep checkpoint
-files out of Git and mount them read-only. The runner refuses a real learned
-planner run when its expected checkpoint is absent, and records the checkpoint
-SHA-256 in the run manifest.
+files out of Git and mount them read-only. Before simulation, the runner checks
+the filename, size, and SHA-256 against `checkpoints/provenance.json`. It records
+the verified checkpoint metadata in the run manifest.
 
 ## Isolation from other experiments
 
@@ -88,6 +88,32 @@ python -m tools.build_planner_outcomes \
 
 The legacy `--idm-run` and `--pdm-run` pair remains supported for the existing
 two-planner workflow.
+
+## Pittsburgh 65-scenario batch
+
+Pittsburgh uses the fixed `configs/scenarios/pittsburgh_65_sample.csv` manifest:
+five scenarios from each of the 13 categories available in the Pittsburgh
+split. Pittsburgh has no `traversing_pickup_dropoff` examples, so this is a
+custom 13-category cohort rather than an official Val14 reproduction.
+
+Point the artifact mount at a Pittsburgh-specific directory and run the batch:
+
+```bash
+export ADDITIONAL_PLANNER_HOST_ARTIFACT_ROOT=./artifacts/pittsburgh_planners
+
+docker compose --project-directory . -f infra/docker/compose.planners.yaml run --rm planner \
+  python -m tools.run_five_planners \
+  --sample configs/scenarios/pittsburgh_65_sample.csv \
+  --dataset-split train_pittsburgh \
+  --smoke-experiment pittsburgh_smoke_YYYYMMDD \
+  --experiment pittsburgh_65_five_planners_YYYYMMDD
+```
+
+The batch runs a one-scenario smoke test immediately before each planner's full
+run. It stops on the first failure and writes `batch_status.json`. A successful
+five-planner batch produces 325 matched rows: 65 scenarios times five planners.
+Use new smoke and full experiment names for every attempt; existing outputs are
+never overwritten.
 
 ## Queued batch after the active regression
 

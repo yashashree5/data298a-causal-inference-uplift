@@ -30,8 +30,12 @@ def main():
     parser.add_argument("--smoke-experiment", required=True)
     parser.add_argument("--dataset-split", choices=["train_pittsburgh"], required=True)
     args = parser.parse_args()
+    full_run = experiment_run_root(args.output_root, args.experiment, "idm")
+    experiment_run_root(args.output_root, args.smoke_experiment, "idm")
+    if args.experiment == args.smoke_experiment:
+        raise ValueError("Full and smoke experiments must use different names")
     scenarios = load_scenarios(args.sample)
-    root = args.output_root / args.experiment
+    root = full_run.parent
     root.mkdir(parents=True, exist_ok=False)
     status_path = root / "batch_status.json"
 

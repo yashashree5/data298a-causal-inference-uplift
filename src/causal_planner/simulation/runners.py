@@ -37,6 +37,7 @@ PLANNER_MODEL_CONFIGS = {
     "gc-pgp": "gc_pgp_model",
 }
 DEFAULT_CHECKPOINT_ROOT = Path(os.getenv("PLANNER_CHECKPOINT_ROOT", "/checkpoints"))
+DEFAULT_CHECKPOINT_PROVENANCE = PROJECT_ROOT / "checkpoints" / "provenance.json"
 SEARCH_PATH = (
     "hydra.searchpath=[pkg://nuplan.planning.script.config.common,"
     "pkg://nuplan.planning.script.experiments,"
@@ -146,6 +147,43 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def checkpoint_metadata(
+    planner: str,
+    checkpoint_root: Path,
+    provenance_path: Path = DEFAULT_CHECKPOINT_PROVENANCE,
+) -> Optional[Dict[str, object]]:
+    """Authenticate a learned planner checkpoint against committed provenance."""
+    checkpoint = planner_checkpoint_path(planner, Path(checkpoint_root))
+    if checkpoint is None:
+        return None
+    if not checkpoint.is_file():
+        raise FileNotFoundError(
+            f"Checkpoint for {planner} not found: {checkpoint}. "
+            "Mount the official checkpoint directory read-only."
+        )
+    try:
+        provenance = json.loads(Path(provenance_path).read_text())
+        expected = provenance["files"][checkpoint.name]
+        expected_size = int(expected["size_bytes"])
+        expected_sha256 = expected["sha256"]
+    except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError(
+            f"Missing or invalid committed provenance for {checkpoint.name}: {provenance_path}"
+        ) from error
+    actual_size = checkpoint.stat().st_size
+    actual_sha256 = sha256_file(checkpoint)
+    if actual_size != expected_size or actual_sha256 != expected_sha256:
+        raise ValueError(
+            f"Checkpoint for {planner} does not match committed provenance: {checkpoint}"
+        )
+    return {
+        "path": str(checkpoint),
+        "filename": checkpoint.name,
+        "size_bytes": actual_size,
+        "sha256": actual_sha256,
+    }
 
 
 def checkout_revision(root):
@@ -275,20 +313,7 @@ def pdm_main():
     if run_root.exists():
         raise FileExistsError(f"Results already exist at {run_root}. Use a new --experiment name; nothing was overwritten.")
 
-    checkpoint_path = planner_checkpoint_path(args.planner, checkpoint_root)
-    checkpoint = None
-    if checkpoint_path:
-        if not checkpoint_path.is_file():
-            raise FileNotFoundError(
-                f"Checkpoint for {args.planner} not found: {checkpoint_path}. "
-                "Mount the official checkpoint directory read-only."
-            )
-        checkpoint = {
-            "path": str(checkpoint_path),
-            "filename": checkpoint_path.name,
-            "size_bytes": checkpoint_path.stat().st_size,
-            "sha256": sha256_file(checkpoint_path),
-        }
+    checkpoint = checkpoint_metadata(args.planner, checkpoint_root)
 
     for name in ["NUPLAN_DATA_ROOT", "NUPLAN_MAPS_ROOT"]:
         if not os.getenv(name) or not Path(os.environ[name]).is_dir():

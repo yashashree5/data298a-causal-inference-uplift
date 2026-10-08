@@ -1,10 +1,13 @@
 import copy
+import hashlib
+import json
 from pathlib import Path
+import tempfile
 import unittest
 
 from tools.idm_mini_reproducer import DEFAULT_SAMPLE, load_scenarios
 from tools.pdm_mini_reproducer import (
-    CHECKPOINT_FILES, PLANNERS, build_command, experiment_run_root,
+    CHECKPOINT_FILES, PLANNERS, build_command, checkpoint_metadata, experiment_run_root,
     planner_checkpoint_path, validate_results,
 )
 
@@ -95,6 +98,26 @@ class PdmMiniReproducerTest(unittest.TestCase):
             Path("/checkpoints/gc_pgp_checkpoint.ckpt"),
             planner_checkpoint_path("gc-pgp", Path("/checkpoints")),
         )
+
+    def test_checkpoint_must_match_committed_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / CHECKPOINT_FILES["gc-pgp"]
+            checkpoint.write_bytes(b"trusted checkpoint")
+            provenance = root / "provenance.json"
+            provenance.write_text(json.dumps({"files": {checkpoint.name: {
+                "size_bytes": checkpoint.stat().st_size,
+                "sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+            }}}))
+            metadata = checkpoint_metadata("gc-pgp", root, provenance)
+            self.assertEqual(checkpoint.name, metadata["filename"])
+            self.assertEqual(checkpoint.stat().st_size, metadata["size_bytes"])
+
+            checkpoint.write_bytes(b"tampered checkpoint")
+            with self.assertRaisesRegex(ValueError, "does not match committed provenance"):
+                checkpoint_metadata("gc-pgp", root, provenance)
+
+            self.assertIsNone(checkpoint_metadata("idm", root, provenance))
 
     def test_unknown_planner_is_rejected(self):
         args = (self.scenarios, Path("/opt/nuplan-devkit"), "python", Path("/artifacts/run"), "run")
