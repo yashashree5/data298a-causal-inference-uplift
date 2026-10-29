@@ -42,7 +42,7 @@ succeeds. Measured on this machine: 441 GB in about 6 minutes with 6 workers.
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python -m pip install torch --index-url https://download.pytorch.org/whl/cu128
-.\.venv\Scripts\python -m pip install pandas numpy pyarrow matplotlib pyyaml pytest jupyter ipykernel tqdm
+.\.venv\Scripts\python -m pip install pandas numpy pyarrow matplotlib pyyaml pytest jupyter ipykernel tqdm requests pyproj
 .\.venv\Scripts\python -m ipykernel install --user --name nuplan-gpu --display-name "Python (nuplan-gpu)"
 ```
 

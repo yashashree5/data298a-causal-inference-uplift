@@ -32,6 +32,26 @@ see the [report](../docs/data/trainval_eligibility.md) for the funnel and catego
 Candidates overlap in time, so the manifest step must still select non-overlapping windows
 per `source_recording` and split train/val/test by recording.
 
+## Weather features
+
+[`extract_weather_features.py`](extract_weather_features.py) adds historical weather and sun
+elevation at simulation start for every benchmark candidate and the 68 mini scenarios. Source:
+Open-Meteo Historical Weather API, model `ecmwf_ifs` (~9 km), CC BY 4.0, non-commercial use.
+
+```powershell
+.\.venv\Scripts\python -m tools.extract_weather_features fetch   # 4 API calls (one per city), cached
+.\.venv\Scripts\python -m tools.extract_weather_features build   # offline from the cache
+.\.venv\Scripts\python -m tools.extract_weather_features check   # validation + docs/data reports
+```
+
+Each scenario uses the UTC hour at or before its simulation start; precipitation, rain and gusts
+cover the preceding hour, so no value describes time after the start. Outputs in
+`D:\nuplan\processed\weather\`: `scenario_weather.parquet` (1,406,469 candidates),
+`scenario_weather_mini_68.parquet`, the hourly table, an alignment audit table and the raw API
+responses. The 10 columns are declared in `configs/features/first_experiment_schema.yaml`
+(`weather_pre_simulation`) and pass `validate_scenario_subset.py --features`. Coverage, limits
+and checks: [`docs/data/weather_features.md`](../docs/data/weather_features.md).
+
 ## IDM mini reproducer
 
 [`idm_mini_reproducer.py`](idm_mini_reproducer.py) starts our IDM mini experiment.
