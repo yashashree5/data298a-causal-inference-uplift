@@ -267,7 +267,7 @@ groups:
     role: covariate
     fields:
       - name: ego_x
-        column: null
+        column: ego_x
         artifacts: []
         source: devkit NuPlanScenario.initial_ego_state.rear_axle.x (iteration 0)
         dtype: float64
@@ -276,9 +276,11 @@ groups:
         model_feature: false
         status: unavailable
         missing_policy: exclude_pair
-        notes: Global map coordinate; needed for map/agent queries but identifies location, so not a model input.
+        notes: >
+          Global map coordinate; needed for map/agent queries but identifies location, so not a model input.
+          Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_y
-        column: null
+        column: ego_y
         artifacts: []
         source: devkit initial_ego_state.rear_axle.y (iteration 0)
         dtype: float64
@@ -287,9 +289,11 @@ groups:
         model_feature: false
         status: unavailable
         missing_policy: exclude_pair
-        notes: Same as ego_x.
+        notes: >
+          Same as ego_x. Extracted to D:\nuplan\processed\features\ego_agent\,
+          not yet integrated into manifest/outcomes.
       - name: ego_heading
-        column: null
+        column: ego_heading
         artifacts: []
         source: devkit initial_ego_state.rear_axle.heading (iteration 0)
         dtype: float64
@@ -298,9 +302,11 @@ groups:
         model_feature: false
         status: unavailable
         missing_policy: exclude_pair
-        notes: Global-frame angle; use it to compute lane-relative quantities, not as a raw input.
+        notes: >
+          Global-frame angle; use it to compute lane-relative quantities, not as a raw input.
+          Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_speed
-        column: null
+        column: ego_speed
         artifacts: []
         source: devkit initial_ego_state.dynamic_car_state.speed (m/s)
         dtype: float64
@@ -309,8 +315,9 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_acceleration
-        column: null
+        column: ego_acceleration
         artifacts: []
         source: devkit initial_ego_state.dynamic_car_state.acceleration (m/s^2)
         dtype: float64
@@ -319,8 +326,9 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_yaw_rate
-        column: null
+        column: ego_yaw_rate
         artifacts: []
         source: devkit initial_ego_state.dynamic_car_state.angular_velocity (rad/s)
         dtype: float64
@@ -329,6 +337,7 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: route_length_m
         column: null
         artifacts: []
@@ -383,7 +392,7 @@ groups:
         missing_policy: null_with_indicator
         notes: Values green | yellow | red | unknown | none; "none" means no controlling light, not missing.
       - name: num_tracked_agents
-        column: null
+        column: num_tracked_agents
         artifacts: []
         source: len(scenario.initial_tracked_objects.tracked_objects)
         dtype: int64
@@ -392,8 +401,9 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: num_vehicles
-        column: null
+        column: num_vehicles
         artifacts: []
         source: initial tracked objects with TrackedObjectType.VEHICLE
         dtype: int64
@@ -402,8 +412,9 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: num_pedestrians
-        column: null
+        column: num_pedestrians
         artifacts: []
         source: initial tracked objects with TrackedObjectType.PEDESTRIAN
         dtype: int64
@@ -412,8 +423,9 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: nearest_agent_distance_m
-        column: null
+        column: nearest_agent_distance_m
         artifacts: []
         source: minimum center distance from ego to any vehicle, pedestrian or bicycle at iteration 0
         dtype: float64
@@ -422,9 +434,11 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: null_with_indicator
-        notes: Null (with indicator) when no agent is present.
+        notes: >
+          Null (with indicator) when no agent is present.
+          Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: nearest_agent_relative_speed_mps
-        column: null
+        column: nearest_agent_relative_speed_mps
         artifacts: []
         source: closing speed between ego and the nearest agent at iteration 0
         dtype: float64
@@ -433,8 +447,9 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: null_with_indicator
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: agents_within_50m
-        column: null
+        column: agents_within_50m
         artifacts: []
         source: count of tracked agents within 50 m of ego at iteration 0 (traffic density)
         dtype: int64
@@ -443,6 +458,7 @@ groups:
         model_feature: true
         status: unavailable
         missing_policy: exclude_pair
+        notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: lane_curvature
         column: null
         artifacts: []
