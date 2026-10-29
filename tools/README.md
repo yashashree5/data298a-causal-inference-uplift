@@ -1,5 +1,29 @@
 # Tools
 
+## Data layer: train-city archives, catalog and extracted logs
+
+These tools prepare the four nuPlan v1.1 train-city archives (Boston, Pittsburgh,
+Singapore, Las Vegas part 1). Machine layout, timings and setup are in
+[`docs/local_gpu_setup.md`](../docs/local_gpu_setup.md).
+
+| Tool | Purpose | Output |
+|---|---|---|
+| [`download_nuplan_drive.ps1`](download_nuplan_drive.ps1) | Resumable rclone copy of the archives from the team Drive (folder ID from `.env`) | `D:\nuplan\downloads\` |
+| [`build_scenario_catalog.py`](build_scenario_catalog.py) | One Parquet shard per log of every tagged anchor, then a combined, checked catalog | `D:\nuplan\processed\scenario_catalog.parquet` |
+| [`extract_nuplan_logs.py`](extract_nuplan_logs.py) | Extracts every log DB into the devkit's `nuplan` builder path and records per-log provenance | `D:\nuplan\dataset\nuplan-v1.1\trainval\` |
+
+```powershell
+.\.venv\Scripts\python -m tools.build_scenario_catalog build; .\.venv\Scripts\python -m tools.build_scenario_catalog check
+.\.venv\Scripts\python -m tools.extract_nuplan_logs extract;  .\.venv\Scripts\python -m tools.extract_nuplan_logs check
+```
+
+All three are resumable and never modify the archives. Verified state (2026-10-29):
+7,353 DBs in 4 archives, all extracted (441 GB) with matching sizes; the catalog has
+43,943,311 tag rows from 7,114 logs (239 logs have no scenario tags) and 73 scenario types.
+Tagged anchors are candidates only; simulation eligibility is decided in a later stage.
+
+## IDM mini reproducer
+
 [`idm_mini_reproducer.py`](idm_mini_reproducer.py) starts our IDM mini experiment.
 It gives everyone on the team the same entry point and simulation settings.
 
