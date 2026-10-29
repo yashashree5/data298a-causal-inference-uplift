@@ -11,16 +11,46 @@ Singapore, Las Vegas part 1). Machine layout, timings and setup are in
 | [`download_nuplan_drive.ps1`](download_nuplan_drive.ps1) | Resumable rclone copy of the archives from the team Drive (folder ID from `.env`) | `D:\nuplan\downloads\` |
 | [`build_scenario_catalog.py`](build_scenario_catalog.py) | One Parquet shard per log of every tagged anchor, then a combined, checked catalog | `D:\nuplan\processed\scenario_catalog.parquet` |
 | [`extract_nuplan_logs.py`](extract_nuplan_logs.py) | Extracts every log DB into the devkit's `nuplan` builder path and records per-log provenance | `D:\nuplan\dataset\nuplan-v1.1\trainval\` |
+| [`build_scenario_eligibility.py`](build_scenario_eligibility.py) | Flags every tagged anchor with the `mini_68` simulation rules, its drive (`source_recording`) and mini overlap | `D:\nuplan\processed\scenario_eligibility.parquet`, [`docs/data/trainval_eligibility.md`](../docs/data/trainval_eligibility.md) |
 
 ```powershell
 .\.venv\Scripts\python -m tools.build_scenario_catalog build; .\.venv\Scripts\python -m tools.build_scenario_catalog check
 .\.venv\Scripts\python -m tools.extract_nuplan_logs extract;  .\.venv\Scripts\python -m tools.extract_nuplan_logs check
+.\.venv\Scripts\python -m tools.build_scenario_eligibility verify-mini   # rules reproduce the mini_68 counts
+.\.venv\Scripts\python -m tools.build_scenario_eligibility build; .\.venv\Scripts\python -m tools.build_scenario_eligibility check
 ```
 
-All three are resumable and never modify the archives. Verified state (2026-10-29):
+All tools are resumable and never modify the archives. Verified state (2026-10-29):
 7,353 DBs in 4 archives, all extracted (441 GB) with matching sizes; the catalog has
 43,943,311 tag rows from 7,114 logs (239 logs have no scenario tags) and 73 scenario types.
-Tagged anchors are candidates only; simulation eligibility is decided in a later stage.
+
+The eligibility table has one row per distinct tagged anchor (20,650,110) and drops nothing;
+rules are flags. `verify-mini` first runs the same code on the 64 mini DBs and must reproduce
+the documented 334,753 anchors, 57,992 benchmark candidates and all 68 manifest rows. On the
+train cities, 1,406,469 anchors are benchmark candidates, from 2,639 logs and 828 drives;
+see the [report](../docs/data/trainval_eligibility.md) for the funnel and category-by-city counts.
+Candidates overlap in time, so the manifest step must still select non-overlapping windows
+per `source_recording` and split train/val/test by recording.
+
+## Weather features
+
+[`extract_weather_features.py`](extract_weather_features.py) adds historical weather and sun
+elevation at simulation start for every benchmark candidate and the 68 mini scenarios. Source:
+Open-Meteo Historical Weather API, model `ecmwf_ifs` (~9 km), CC BY 4.0, non-commercial use.
+
+```powershell
+.\.venv\Scripts\python -m tools.extract_weather_features fetch   # 4 API calls (one per city), cached
+.\.venv\Scripts\python -m tools.extract_weather_features build   # offline from the cache
+.\.venv\Scripts\python -m tools.extract_weather_features check   # validation + docs/data reports
+```
+
+Each scenario uses the UTC hour at or before its simulation start; precipitation, rain and gusts
+cover the preceding hour, so no value describes time after the start. Outputs in
+`D:\nuplan\processed\weather\`: `scenario_weather.parquet` (1,406,469 candidates),
+`scenario_weather_mini_68.parquet`, the hourly table, an alignment audit table and the raw API
+responses. The 10 columns are declared in `configs/features/first_experiment_schema.yaml`
+(`weather_pre_simulation`) and pass `validate_scenario_subset.py --features`. Coverage, limits
+and checks: [`docs/data/weather_features.md`](../docs/data/weather_features.md).
 
 ## IDM mini reproducer
 

@@ -454,6 +454,116 @@ groups:
         status: unavailable
         missing_policy: null_with_indicator
 
+  # Historical weather and sun position (tools/extract_weather_features.py, docs/data/weather_features.md).
+  # Estimates for the city's ~9 km model grid cell (Open-Meteo, ECMWF IFS), not vehicle measurements.
+  # Weather hour = window_start_us floored to the UTC hour; accumulations cover (hour - 1 h, hour].
+  weather_pre_simulation:
+    role: covariate
+    fields:
+      - name: weather_temperature_c
+        column: null
+        artifacts: []
+        source: Open-Meteo temperature_2m (instant) at the hour at or before simulation start
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_relative_humidity_pct
+        column: null
+        artifacts: []
+        source: Open-Meteo relative_humidity_2m (instant)
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_cloud_cover_pct
+        column: null
+        artifacts: []
+        source: Open-Meteo cloud_cover (instant)
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_wind_speed_kmh
+        column: null
+        artifacts: []
+        source: Open-Meteo wind_speed_10m (instant)
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_code
+        column: null
+        artifacts: []
+        source: Open-Meteo weather_code (instant, WMO code)
+        dtype: int64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: Categorical; encode as categories, not as an ordered number.
+      - name: weather_precipitation_mm
+        column: null
+        artifacts: []
+        source: Open-Meteo precipitation, sum over the hour before the weather hour label
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_rain_mm
+        column: null
+        artifacts: []
+        source: Open-Meteo rain, sum over the preceding hour
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_wind_gusts_kmh
+        column: null
+        artifacts: []
+        source: Open-Meteo wind_gusts_10m, maximum over the preceding hour
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+      - name: weather_precipitation_prev_3h_mm
+        column: null
+        artifacts: []
+        source: derived; precipitation summed over the three hours ending at the weather hour
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: Wet-road proxy; uses only hours before simulation start.
+      - name: sun_elevation_deg
+        column: null
+        artifacts: []
+        source: derived; NOAA solar elevation at window_start_us for the city point
+        dtype: float64
+        required: false
+        available_before_simulation: true
+        model_feature: true
+        status: unavailable
+        missing_policy: null_with_indicator
+        notes: All train-city candidates were recorded in daylight (07:00-17:00 local), so this varies little.
+
   planner_treatment:
     role: treatment
     fields:
