@@ -52,6 +52,26 @@ responses. The 10 columns are declared in `configs/features/first_experiment_sch
 (`weather_pre_simulation`) and pass `validate_scenario_subset.py --features`. Coverage, limits
 and checks: [`docs/data/weather_features.md`](../docs/data/weather_features.md).
 
+## Ego and agent features
+
+[`extract_ego_agent_features.py`](extract_ego_agent_features.py) extracts ego vehicle state
+(position, speed, acceleration, yaw rate) and surrounding agent features (counts, nearest distance,
+closing speed) at simulation iteration 0 for every benchmark candidate and the 68 mini scenarios.
+
+```powershell
+.\.venv\Scripts\python -m tools.extract_ego_agent_features build-mini   # 68 mini scenarios
+.\.venv\Scripts\python -m tools.extract_ego_agent_features verify-mini  # compare with devkit SQL
+.\.venv\Scripts\python -m tools.extract_ego_agent_features build        # 1.4M train candidates
+.\.venv\Scripts\python -m tools.extract_ego_agent_features check        # validation + reports
+```
+
+Iteration 0 is defined by the devkit: the first lidar_pc at or after `anchor - 3 s`, reading
+only data at or before that timestamp. Ego velocities are rotated from the ego frame to the
+global frame; agent velocities are already global. Outputs in `D:\nuplan\processed\features\ego_agent\`:
+one Parquet per log with candidates, `scenario_ego_agent_mini_68.parquet`, and audit reports.
+The 12 columns are declared in `configs/features/first_experiment_schema.yaml`
+(`ego_scene_pre_simulation`) and pass all unit tests and validation checks.
+
 ## IDM mini reproducer
 
 [`idm_mini_reproducer.py`](idm_mini_reproducer.py) starts our IDM mini experiment.
