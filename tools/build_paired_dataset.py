@@ -67,7 +67,7 @@ def extract(schema):
         "outcome_rows": outcome_rows,
         "outcome_columns": outcome_columns,
         "experiment": json.loads(paths["experiment_metadata"].read_text(encoding="utf-8")),
-        "sources": {str(path.relative_to(PROJECT_ROOT)): {"sha256": sha256_file(path), "bytes": path.stat().st_size}
+        "sources": {path.relative_to(PROJECT_ROOT).as_posix(): {"sha256": sha256_file(path), "bytes": path.stat().st_size}
                     for path in paths.values()},
     }
 
