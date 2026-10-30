@@ -1,0 +1,8 @@
+# Keep LF line endings on every platform. The frozen scenario manifest and
+# outcome artifacts are checked by SHA-256, so Windows CRLF conversion would
+# break provenance validation.
+* text=auto eol=lf
+*.parquet binary
+*.png binary
+*.docx binary
+*.zip binary

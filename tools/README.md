@@ -7,9 +7,88 @@ a checkout without installation. Docker already mounts the checkout, so this
 reorganization does not require an image rebuild. See the
 [module mapping and migration notes](../docs/repository_structure.md).
 
-The new `extract_scenario_features.py` and `build_model_dataset.py` commands are
-scaffolds only. Use `--help` to see their status; running them cannot create data
-and exits with status 2. Feature extraction and dataset assembly are future work.
+The `extract_scenario_features.py` and `build_model_dataset.py` commands remain
+package-migration placeholders: execution exits with status 2 and writes no data.
+The implemented feature extractors are `extract_weather_features.py` and
+`extract_ego_agent_features.py`, documented below. Use `build_paired_dataset.py`
+for the existing IDM/PDM-Closed cleaning, pairing, and grouped-fold workflow;
+joining the extracted feature tables into the modeling dataset remains separate
+work. `configs/features/first_experiment_schema.yaml` is its field contract;
+`feature_schema.json` is an unused placeholder, not a replacement contract.
+
+## Data layer: train-city archives, catalog and extracted logs
+
+These tools prepare the four nuPlan v1.1 train-city archives (Boston, Pittsburgh,
+Singapore, Las Vegas part 1). Machine layout, timings and setup are in
+[`docs/local_gpu_setup.md`](../docs/local_gpu_setup.md).
+
+| Tool | Purpose | Output |
+|---|---|---|
+| [`download_nuplan_drive.ps1`](download_nuplan_drive.ps1) | Resumable rclone copy of the archives from the team Drive (folder ID from `.env`) | `D:\nuplan\downloads\` |
+| [`build_scenario_catalog.py`](build_scenario_catalog.py) | One Parquet shard per log of every tagged anchor, then a combined, checked catalog | `D:\nuplan\processed\scenario_catalog.parquet` |
+| [`extract_nuplan_logs.py`](extract_nuplan_logs.py) | Extracts every log DB into the devkit's `nuplan` builder path and records per-log provenance | `D:\nuplan\dataset\nuplan-v1.1\trainval\` |
+| [`build_scenario_eligibility.py`](build_scenario_eligibility.py) | Flags every tagged anchor with the `mini_68` simulation rules, its drive (`source_recording`) and mini overlap | `D:\nuplan\processed\scenario_eligibility.parquet`, [`docs/data/trainval_eligibility.md`](../docs/data/trainval_eligibility.md) |
+
+```powershell
+.\.venv\Scripts\python -m tools.build_scenario_catalog build; .\.venv\Scripts\python -m tools.build_scenario_catalog check
+.\.venv\Scripts\python -m tools.extract_nuplan_logs extract;  .\.venv\Scripts\python -m tools.extract_nuplan_logs check
+.\.venv\Scripts\python -m tools.build_scenario_eligibility verify-mini   # rules reproduce the mini_68 counts
+.\.venv\Scripts\python -m tools.build_scenario_eligibility build; .\.venv\Scripts\python -m tools.build_scenario_eligibility check
+```
+
+All tools are resumable and never modify the archives. Verified state (2026-10-29):
+7,353 DBs in 4 archives, all extracted (441 GB) with matching sizes; the catalog has
+43,943,311 tag rows from 7,114 logs (239 logs have no scenario tags) and 73 scenario types.
+
+The eligibility table has one row per distinct tagged anchor (20,650,110) and drops nothing;
+rules are flags. `verify-mini` first runs the same code on the 64 mini DBs and must reproduce
+the documented 334,753 anchors, 57,992 benchmark candidates and all 68 manifest rows. On the
+train cities, 1,406,469 anchors are benchmark candidates, from 2,639 logs and 828 drives;
+see the [report](../docs/data/trainval_eligibility.md) for the funnel and category-by-city counts.
+Candidates overlap in time, so the manifest step must still select non-overlapping windows
+per `source_recording` and split train/val/test by recording.
+
+## Weather features
+
+[`extract_weather_features.py`](extract_weather_features.py) adds historical weather and sun
+elevation at simulation start for every benchmark candidate and the 68 mini scenarios. Source:
+Open-Meteo Historical Weather API, model `ecmwf_ifs` (~9 km), CC BY 4.0, non-commercial use.
+
+```powershell
+.\.venv\Scripts\python -m tools.extract_weather_features fetch   # 4 API calls (one per city), cached
+.\.venv\Scripts\python -m tools.extract_weather_features build   # offline from the cache
+.\.venv\Scripts\python -m tools.extract_weather_features check   # validation + docs/data reports
+```
+
+Each scenario uses the UTC hour at or before its simulation start; precipitation, rain and gusts
+cover the preceding hour, so no value describes time after the start. Outputs in
+`D:\nuplan\processed\weather\`: `scenario_weather.parquet` (1,406,469 candidates),
+`scenario_weather_mini_68.parquet`, the hourly table, an alignment audit table and the raw API
+responses. The 10 columns are declared in `configs/features/first_experiment_schema.yaml`
+(`weather_pre_simulation`) and pass `validate_scenario_subset.py --features`. Coverage, limits
+and checks: [`docs/data/weather_features.md`](../docs/data/weather_features.md).
+
+## Ego and agent features
+
+[`extract_ego_agent_features.py`](extract_ego_agent_features.py) extracts ego vehicle state
+(position, speed, acceleration, yaw rate) and surrounding agent features (counts, nearest distance,
+closing speed) at simulation iteration 0 for every benchmark candidate and the 68 mini scenarios.
+
+```powershell
+.\.venv\Scripts\python -m tools.extract_ego_agent_features build-mini   # 68 mini scenarios
+.\.venv\Scripts\python -m tools.extract_ego_agent_features verify-mini  # compare with devkit SQL
+.\.venv\Scripts\python -m tools.extract_ego_agent_features build        # 1.4M train candidates
+.\.venv\Scripts\python -m tools.extract_ego_agent_features check        # validation + reports
+```
+
+Iteration 0 is defined by the devkit: the first lidar_pc at or after `anchor - 3 s`, reading
+only data at or before that timestamp. Ego velocities are rotated from the ego frame to the
+global frame; agent velocities are already global. Outputs in `D:\nuplan\processed\features\ego_agent\`:
+one Parquet per log with candidates, `scenario_ego_agent_mini_68.parquet`, and audit reports.
+The 12 columns are declared in `configs/features/first_experiment_schema.yaml`
+(`ego_scene_pre_simulation`) and pass all unit tests and validation checks.
+
+## IDM mini reproducer
 
 [`idm_mini_reproducer.py`](idm_mini_reproducer.py) starts our IDM mini experiment.
 It gives everyone on the team the same entry point and simulation settings.
@@ -152,8 +231,9 @@ Component metrics are scores, not raw collision counts or physical units.
 There is no stored difference column. Effects can be derived by pairing rows.
 
 This is the **outcome table**, not yet a complete causal-model feature table.
-Initial speed, surrounding-agent counts and other pre-simulation conditions
-still need extraction. Scenario category tags may describe future events and
+Weather and ego/agent extractors now produce separate pre-simulation tables;
+those tables still need to be joined to the outcomes by scenario ID. Scenario
+category tags may describe future events and
 must not be blindly used as model inputs. All rows from a driving log should
 stay together in any train/test split; 136 rows are only 68 paired scenarios.
 

@@ -14,6 +14,8 @@ rules are unchanged.
 | Planner commands and execution | `simulation/runners.py` | `tools/idm_mini_reproducer.py`, `tools/pdm_mini_reproducer.py` |
 | Report and matched-run validation | `simulation/validation.py` | Re-exported through the existing tools |
 | Outcome assembly and exports | `data/outcomes.py` | `tools/build_planner_outcomes.py` |
+| Ego/agent and weather extraction | Existing tools retained on main | `tools/extract_ego_agent_features.py`, `tools/extract_weather_features.py` |
+| Mini outcome cleaning, pairing, and grouped folds | Existing tool retained on main | `tools/build_paired_dataset.py` |
 | Feature extraction | `data/features.py` (scaffold) | `tools/extract_scenario_features.py` (scaffold) |
 | Modeling table assembly and log splits | `data/dataset.py` (scaffold) | `tools/build_model_dataset.py` (scaffold) |
 
@@ -52,22 +54,35 @@ Heavy dependencies and upstream revisions remain defined by the existing Docker
 files and requirement files under `infra/docker/`. Installing this package alone
 does not install nuPlan, pandas, or the simulation environment.
 
-## Future feature pipeline
+## Feature pipeline and remaining assembly work
 
-The new feature and dataset files reserve responsibilities only. Their
+The package feature and dataset files reserve responsibilities only. Their
 `--help` commands work; attempting execution exits with status 2 and an explicit
-not-implemented message. They cannot generate feature data yet.
+not-implemented message. They cannot generate feature data. The merged
+`tools/extract_ego_agent_features.py` and `tools/extract_weather_features.py`
+already implement extraction, with reports in `docs/data/`; the original tools
+remain the supported entry points. Generated tables live outside Git and must
+be supplied or regenerated with paths appropriate to the current machine.
+
+`tools/build_paired_dataset.py` implements cleaning and pairing of the committed
+IDM/PDM-Closed outcomes and grouped folds. Its field contract is
+`configs/features/first_experiment_schema.yaml`. It does not yet join the separate
+weather and ego/agent feature tables into a complete modeling table.
 
 `configs/features/feature_schema.json` is marked `scaffold` and contains no
-approved feature definitions. Before implementation:
+approved feature definitions. It is not the active field contract and must not
+replace the YAML contract. Before extending dataset assembly:
 
 1. Verify the actual simulation start from the resolved scenario configuration;
    do not assume it equals the anchor timestamp.
 2. Define feature names, units, history window, and missing-value behavior.
-3. Extract only information available at or before simulation start.
+3. Reuse the existing extractors and include only information available at or
+   before simulation start.
 4. Validate one feature row per scenario and matching manifest provenance.
 5. Pair the two planner outcomes and calculate `score_pdm - score_idm`.
-6. Assign whole driving logs to splits before fitting any preprocessing.
+6. Assign whole source recordings to splits before fitting any preprocessing;
+   multiple log segments from the same recording must stay together. The current
+   mini paired builder groups by log; changing that policy is dataset work.
 7. Verify on `mini_68` before generating a larger experiment.
 
 Outcome/component scores and retrospective tags must not become predictor inputs
@@ -81,6 +96,7 @@ remains ignored by Git. `configs/scenarios/pittsburgh_sample.csv` does not yet
 exist: it must be created from the inspected catalog, not an empty or fabricated
 cohort. Record equal feasible category counts and log coverage before simulations.
 
-The EDA notebook and current runners still use the mini split. Adding configurable
-Pittsburgh data paths, selecting the cohort, extracting features, and running new
-simulations are subsequent work, not completed by this structural refactor.
+The current simulation runners still use the mini split. The merged catalog,
+eligibility, and feature tools also cover the train-city data; that does not add
+Pittsburgh simulation support to these runners. The frozen Pittsburgh manifest
+and five-planner runners are reviewed separately in `feat/five-planner-pittsburgh`.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "scaffold",
-  "description": "Feature definitions and units will be finalized before extraction is implemented.",
+  "description": "Unused package-migration placeholder. Use first_experiment_schema.yaml for the implemented paired-data and feature workflow.",
   "row_key": "scenario_id",
   "prediction_time": "actual_simulation_start",
   "history_seconds": null,

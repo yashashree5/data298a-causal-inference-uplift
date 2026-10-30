@@ -574,7 +574,7 @@ Responsibilities may evolve as the technical design is finalized, while individu
 │   └── pittsburgh_v1/         # Planning README only; no results yet
 ├── configs/
 │   ├── scenarios/             # Fixed scenario manifest and selection notes
-│   └── features/              # Draft feature-schema scaffold
+│   └── features/              # YAML field contract and migration placeholder
 ├── src/
 │   └── causal_planner/
 │       ├── simulation/
@@ -586,27 +586,36 @@ Responsibilities may evolve as the technical design is finalized, while individu
 │           ├── features.py   # Scaffold: extraction not implemented yet
 │           └── dataset.py    # Scaffold: joins/splits not implemented yet
 ├── docs/
+│   ├── data/                  # Eligibility and feature reports
 │   └── research/
 ├── infra/
 │   └── docker/                # Pinned nuPlan environments
 ├── notebooks/                 # Dataset exploration
 ├── tests/                     # Fast validation tests
-└── tools/                     # Compatible CLI entry points into src/
+└── tools/                     # Planner entry points and data/feature tools
 ```
 
 Raw nuPlan data, complete simulation outputs, local environment files, and
 upstream repositories remain excluded from Git.
 
 Existing Makefile commands and `tools.*` imports still work without installing
-the package or rebuilding Docker. Reusable implementation now lives in `src/`;
-the tools delegate to it. See [repository structure and migration](docs/repository_structure.md)
+the package or rebuilding Docker. Reusable planner implementation now lives in
+`src/`; the planner tools delegate to it. The merged data and feature tools remain
+in `tools/`. See [repository structure and migration](docs/repository_structure.md)
 for the file mapping and optional editable installation.
 
 `tools/extract_scenario_features.py` and `tools/build_model_dataset.py` are
-explicit scaffolds: `--help` works, but execution exits with a not-implemented
-message. No feature data or modeling table has been generated. The future
-`configs/scenarios/pittsburgh_sample.csv` will be created after cataloging and
-validating a Pittsburgh cohort; the current runners still use the mini split.
+package-migration placeholders: `--help` works, but execution exits with a
+not-implemented message. Implemented workflows are available separately:
+`tools/extract_weather_features.py`, `tools/extract_ego_agent_features.py`, and
+`tools/build_paired_dataset.py`. They use
+`configs/features/first_experiment_schema.yaml`; the JSON scaffold does not
+replace that contract. Generated feature tables remain outside Git, and joining
+them to the modeling dataset is separate work. See the [tools guide](tools/README.md)
+and [feature reports](docs/data/ego_agent_features.md).
+
+The refactor retains the mini simulation workflow. Pittsburgh runner support and
+its frozen manifest are reviewed separately in `feat/five-planner-pittsburgh`.
 
 ---
 

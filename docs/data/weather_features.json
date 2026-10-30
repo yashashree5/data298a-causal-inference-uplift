@@ -1,0 +1,210 @@
+{
+  "weather_version": "weather-v1",
+  "provenance": {
+    "weather_version": "weather-v1",
+    "api": "https://archive-api.open-meteo.com/v1/archive",
+    "model": "ecmwf_ifs",
+    "license": "CC BY 4.0",
+    "time_rule": "hour label floor(window_start_us); instant vars at H, accumulations over (H-1h, H]",
+    "cities": {
+      "boston": {
+        "point": {
+          "latitude": 42.34636,
+          "longitude": -71.04257,
+          "source_epsg": 32619,
+          "logs": 1647,
+          "span_km_north_south": 1.8,
+          "span_km_east_west": 2.8
+        },
+        "grid": [
+          42.28471,
+          -71.0249
+        ],
+        "grid_elevation_m": 10.0,
+        "fetched_utc": "2026-10-29T19:58:47+00:00",
+        "request": {
+          "latitude": 42.34636,
+          "longitude": -71.04257,
+          "start_date": "2021-08-17",
+          "end_date": "2021-10-22",
+          "hourly": "temperature_2m,relative_humidity_2m,cloud_cover,wind_speed_10m,weather_code,precipitation,rain,wind_gusts_10m",
+          "timezone": "GMT",
+          "models": "ecmwf_ifs"
+        }
+      },
+      "las_vegas": {
+        "point": {
+          "latitude": 36.1096,
+          "longitude": -115.17278,
+          "source_epsg": 32611,
+          "logs": 1750,
+          "span_km_north_south": 6.7,
+          "span_km_east_west": 2.7
+        },
+        "grid": [
+          36.098415,
+          -115.214005
+        ],
+        "grid_elevation_m": 647.0,
+        "fetched_utc": "2026-10-29T19:58:48+00:00",
+        "request": {
+          "latitude": 36.1096,
+          "longitude": -115.17278,
+          "start_date": "2021-05-11",
+          "end_date": "2021-07-25",
+          "hourly": "temperature_2m,relative_humidity_2m,cloud_cover,wind_speed_10m,weather_code,precipitation,rain,wind_gusts_10m",
+          "timezone": "GMT",
+          "models": "ecmwf_ifs"
+        }
+      },
+      "pittsburgh": {
+        "point": {
+          "latitude": 40.42598,
+          "longitude": -79.96153,
+          "source_epsg": 32617,
+          "logs": 1560,
+          "span_km_north_south": 2.1,
+          "span_km_east_west": 2.0
+        },
+        "grid": [
+          40.45694,
+          -79.97177
+        ],
+        "grid_elevation_m": 228.0,
+        "fetched_utc": "2026-10-29T19:58:49+00:00",
+        "request": {
+          "latitude": 40.42598,
+          "longitude": -79.96153,
+          "start_date": "2021-08-16",
+          "end_date": "2021-10-01",
+          "hourly": "temperature_2m,relative_humidity_2m,cloud_cover,wind_speed_10m,weather_code,precipitation,rain,wind_gusts_10m",
+          "timezone": "GMT",
+          "models": "ecmwf_ifs"
+        }
+      },
+      "singapore": {
+        "point": {
+          "latitude": 1.2997,
+          "longitude": 103.79157,
+          "source_epsg": 32648,
+          "logs": 2396,
+          "span_km_north_south": 1.5,
+          "span_km_east_west": 1.1
+        },
+        "grid": [
+          1.3005272,
+          103.79147
+        ],
+        "grid_elevation_m": 22.0,
+        "fetched_utc": "2026-10-29T19:58:50+00:00",
+        "request": {
+          "latitude": 1.2997,
+          "longitude": 103.79157,
+          "start_date": "2021-08-17",
+          "end_date": "2021-10-15",
+          "hourly": "temperature_2m,relative_humidity_2m,cloud_cover,wind_speed_10m,weather_code,precipitation,rain,wind_gusts_10m",
+          "timezone": "GMT",
+          "models": "ecmwf_ifs"
+        }
+      }
+    }
+  },
+  "features": [
+    "weather_temperature_c",
+    "weather_relative_humidity_pct",
+    "weather_cloud_cover_pct",
+    "weather_wind_speed_kmh",
+    "weather_code",
+    "weather_precipitation_mm",
+    "weather_rain_mm",
+    "weather_wind_gusts_kmh",
+    "weather_precipitation_prev_3h_mm",
+    "sun_elevation_deg"
+  ],
+  "by_city": {
+    "boston": {
+      "candidates": 230483,
+      "distinct_hours": 177,
+      "distinct_days": 39,
+      "first_hour_utc": "2021-08-18 18:00:00+00:00",
+      "last_hour_utc": "2021-10-22 19:00:00+00:00",
+      "temperature_c_min_median_max": [
+        8.6,
+        20.3,
+        32.4
+      ],
+      "wet_hours_precip_gt_0_1mm": 26,
+      "scenarios_in_wet_hours": 33434,
+      "scenarios_at_night_sun_below_0": 0,
+      "grid_distance_km": 8.08
+    },
+    "las_vegas": {
+      "candidates": 611758,
+      "distinct_hours": 75,
+      "distinct_days": 13,
+      "first_hour_utc": "2021-05-12 19:00:00+00:00",
+      "last_hour_utc": "2021-05-27 00:00:00+00:00",
+      "temperature_c_min_median_max": [
+        14.6,
+        29.4,
+        36.2
+      ],
+      "wet_hours_precip_gt_0_1mm": 0,
+      "scenarios_in_wet_hours": 0,
+      "scenarios_at_night_sun_below_0": 0,
+      "grid_distance_km": 5.32
+    },
+    "pittsburgh": {
+      "candidates": 352687,
+      "distinct_hours": 149,
+      "distinct_days": 25,
+      "first_hour_utc": "2021-08-17 13:00:00+00:00",
+      "last_hour_utc": "2021-10-01 19:00:00+00:00",
+      "temperature_c_min_median_max": [
+        10.6,
+        23.0,
+        30.9
+      ],
+      "wet_hours_precip_gt_0_1mm": 23,
+      "scenarios_in_wet_hours": 50521,
+      "scenarios_at_night_sun_below_0": 0,
+      "grid_distance_km": 4.11
+    },
+    "singapore": {
+      "candidates": 211541,
+      "distinct_hours": 168,
+      "distinct_days": 30,
+      "first_hour_utc": "2021-08-18 06:00:00+00:00",
+      "last_hour_utc": "2021-10-15 03:00:00+00:00",
+      "temperature_c_min_median_max": [
+        25.0,
+        28.15,
+        30.1
+      ],
+      "wet_hours_precip_gt_0_1mm": 53,
+      "scenarios_in_wet_hours": 79971,
+      "scenarios_at_night_sun_below_0": 0,
+      "grid_distance_km": 0.09
+    }
+  },
+  "mini_68": {
+    "scenarios": 68,
+    "wet": 1,
+    "night": 0
+  },
+  "checks": {
+    "generated_utc": "2026-10-29T20:00:33+00:00",
+    "results": {
+      "one row per benchmark candidate": true,
+      "68 mini_68 rows": true,
+      "scenario_id unique in each table": true,
+      "no missing weather values": true,
+      "weather hour is at or before simulation start (lag 0 to <1 h)": true,
+      "values within physical ranges": true,
+      "rain never exceeds precipitation": true,
+      "3-hour precipitation >= current hour": true,
+      "model grid point within 10 km of every city point": true
+    },
+    "complete": true
+  }
+}
