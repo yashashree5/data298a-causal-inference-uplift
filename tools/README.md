@@ -1,5 +1,21 @@
 # Tools
 
+These files are stable command-line entry points. The reusable implementation
+lives under `src/causal_planner/`; existing commands and public function imports
+remain available. `tools/_bootstrap.py` makes the source package importable from
+a checkout without installation. Docker already mounts the checkout, so this
+reorganization does not require an image rebuild. See the
+[module mapping and migration notes](../docs/repository_structure.md).
+
+The `extract_scenario_features.py` and `build_model_dataset.py` commands remain
+package-migration placeholders: execution exits with status 2 and writes no data.
+The implemented feature extractors are `extract_weather_features.py` and
+`extract_ego_agent_features.py`, documented below. Use `build_paired_dataset.py`
+for the existing IDM/PDM-Closed cleaning, pairing, and grouped-fold workflow;
+joining the extracted feature tables into the modeling dataset remains separate
+work. `configs/features/first_experiment_schema.yaml` is its field contract;
+`feature_schema.json` is an unused placeholder, not a replacement contract.
+
 ## Data layer: train-city archives, catalog and extracted logs
 
 These tools prepare the four nuPlan v1.1 train-city archives (Boston, Pittsburgh,
@@ -215,8 +231,9 @@ Component metrics are scores, not raw collision counts or physical units.
 There is no stored difference column. Effects can be derived by pairing rows.
 
 This is the **outcome table**, not yet a complete causal-model feature table.
-Initial speed, surrounding-agent counts and other pre-simulation conditions
-still need extraction. Scenario category tags may describe future events and
+Weather and ego/agent extractors now produce separate pre-simulation tables;
+those tables still need to be joined to the outcomes by scenario ID. Scenario
+category tags may describe future events and
 must not be blindly used as model inputs. All rows from a driving log should
 stay together in any train/test split; 136 rows are only 68 paired scenarios.
 

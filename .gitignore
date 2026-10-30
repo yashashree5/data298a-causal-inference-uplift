@@ -4,11 +4,17 @@
 __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
+*.egg-info/
+/build/
+/dist/
 
 # Local dependencies and generated outputs.
 /external/
 # Share only the reviewed 68-scenario result snapshot, not full run directories.
 /artifacts/*
+!/artifacts/pittsburgh_v1/
+/artifacts/pittsburgh_v1/*
+!/artifacts/pittsburgh_v1/README.md
 !/artifacts/mini_68/
 /artifacts/mini_68/*
 !/artifacts/mini_68/planner_outcomes.parquet

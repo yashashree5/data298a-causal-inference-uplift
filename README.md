@@ -568,21 +568,54 @@ Responsibilities may evolve as the technical design is finalized, while individu
 .
 ├── README.md
 ├── Makefile
+├── pyproject.toml              # Optional editable package installation
 ├── artifacts/
-│   └── mini_68/               # Committed matched outcome snapshot
+│   ├── mini_68/               # Committed matched outcome snapshot
+│   └── pittsburgh_v1/         # Planning README only; no results yet
 ├── configs/
-│   └── scenarios/             # Fixed scenario manifest and selection notes
+│   ├── scenarios/             # Fixed scenario manifest and selection notes
+│   └── features/              # YAML field contract and migration placeholder
+├── src/
+│   └── causal_planner/
+│       ├── simulation/
+│       │   ├── runners.py     # Existing planner commands and execution
+│       │   └── validation.py  # Reports and matched-run compatibility
+│       └── data/
+│           ├── scenarios.py  # Manifest loading and validation
+│           ├── outcomes.py   # Validated planner outcome assembly
+│           ├── features.py   # Scaffold: extraction not implemented yet
+│           └── dataset.py    # Scaffold: joins/splits not implemented yet
 ├── docs/
+│   ├── data/                  # Eligibility and feature reports
 │   └── research/
 ├── infra/
 │   └── docker/                # Pinned nuPlan environments
 ├── notebooks/                 # Dataset exploration
 ├── tests/                     # Fast validation tests
-└── tools/                     # Planner runners and outcome assembly
+└── tools/                     # Planner entry points and data/feature tools
 ```
 
 Raw nuPlan data, complete simulation outputs, local environment files, and
 upstream repositories remain excluded from Git.
+
+Existing Makefile commands and `tools.*` imports still work without installing
+the package or rebuilding Docker. Reusable planner implementation now lives in
+`src/`; the planner tools delegate to it. The merged data and feature tools remain
+in `tools/`. See [repository structure and migration](docs/repository_structure.md)
+for the file mapping and optional editable installation.
+
+`tools/extract_scenario_features.py` and `tools/build_model_dataset.py` are
+package-migration placeholders: `--help` works, but execution exits with a
+not-implemented message. Implemented workflows are available separately:
+`tools/extract_weather_features.py`, `tools/extract_ego_agent_features.py`, and
+`tools/build_paired_dataset.py`. They use
+`configs/features/first_experiment_schema.yaml`; the JSON scaffold does not
+replace that contract. Generated feature tables remain outside Git, and joining
+them to the modeling dataset is separate work. See the [tools guide](tools/README.md)
+and [feature reports](docs/data/ego_agent_features.md).
+
+The refactor retains the mini simulation workflow. Pittsburgh runner support and
+its frozen manifest are reviewed separately in `feat/five-planner-pittsburgh`.
 
 ---
 

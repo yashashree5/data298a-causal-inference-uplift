@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "status": "scaffold",
+  "description": "Unused package-migration placeholder. Use first_experiment_schema.yaml for the implemented paired-data and feature workflow.",
+  "row_key": "scenario_id",
+  "prediction_time": "actual_simulation_start",
+  "history_seconds": null,
+  "features": [],
+  "excluded_predictors": [
+    "scenario_type",
+    "all_scenario_tags",
+    "score",
+    "run_id",
+    "planner"
+  ]
+}
