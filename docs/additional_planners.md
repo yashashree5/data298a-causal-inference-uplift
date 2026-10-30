@@ -89,12 +89,31 @@ python -m tools.build_planner_outcomes \
 The legacy `--idm-run` and `--pdm-run` pair remains supported for the existing
 two-planner workflow.
 
+## Use with the merged data pipeline
+
+The long-format outcome builder supports all five planners. The downstream
+`tools/build_paired_dataset.py` and its YAML subset expectations still select
+IDM/PDM-Closed; adding five-planner outcomes there without updating the pair
+selection and contract will not produce four comparisons.
+
+Reuse the weather and ego/agent extractors already merged into main. Their
+generated tables are outside Git: supply or regenerate them, then join one
+pre-simulation feature row per `scenario_id`. A modeling extension should use
+four candidate-versus-IDM targets (`candidate_score - idm_score`) and the same
+split assignment for every comparison, grouping segments by source recording.
+This branch adds simulation and outcome support; it does not complete those
+feature joins or the multi-planner modeling extension.
+
 ## Pittsburgh 65-scenario batch
 
 Pittsburgh uses the fixed `configs/scenarios/pittsburgh_65_sample.csv` manifest:
 five scenarios from each of the 13 categories available in the Pittsburgh
 split. Pittsburgh has no `traversing_pickup_dropoff` examples, so this is a
 custom 13-category cohort rather than an official Val14 reproduction.
+
+Keep the manifest's original bytes unchanged. Its recorded SHA-256 covers CRLF
+line endings; `.gitattributes` disables text conversion for this file so a fresh
+checkout or later Git add preserves provenance.
 
 Point the artifact mount at a Pittsburgh-specific directory and run the batch:
 

@@ -1,0 +1,214 @@
+{
+  "eligibility_version": "eligibility-v1",
+  "rules": {
+    "scene_rule": "exclude anchors in the first two and last two scenes (ordered by scene.name)",
+    "window_us": [
+      -3000000,
+      12000000
+    ],
+    "benchmark_types": [
+      "behind_long_vehicle",
+      "changing_lane",
+      "following_lane_with_lead",
+      "high_lateral_acceleration",
+      "high_magnitude_speed",
+      "low_magnitude_speed",
+      "near_multiple_vehicles",
+      "starting_left_turn",
+      "starting_right_turn",
+      "starting_straight_traffic_light_intersection_traversal",
+      "stationary_in_traffic",
+      "stopping_with_lead",
+      "traversing_pickup_dropoff",
+      "waiting_for_pedestrian_to_cross"
+    ],
+    "benchmark_label": "alphabetically last matching benchmark tag (MAX(type))",
+    "mini_exclusion": "whole source_recording excluded if it also has a mini log"
+  },
+  "funnel": [
+    {
+      "step": "tagged anchors",
+      "anchors": 20650110,
+      "logs": 7114,
+      "recordings": 865
+    },
+    {
+      "step": "in valid scene (not first/last two scenes)",
+      "anchors": 15116637,
+      "logs": 6609,
+      "recordings": 862
+    },
+    {
+      "step": "valid mission goal",
+      "anchors": 6539929,
+      "logs": 2758,
+      "recordings": 841
+    },
+    {
+      "step": "route roadblocks present",
+      "anchors": 6539929,
+      "logs": 2758,
+      "recordings": 841
+    },
+    {
+      "step": "complete 15 s window",
+      "anchors": 6539929,
+      "logs": 2758,
+      "recordings": 841
+    },
+    {
+      "step": "has one of the 14 benchmark tags",
+      "anchors": 1434637,
+      "logs": 2680,
+      "recordings": 839
+    },
+    {
+      "step": "recording not shared with mini",
+      "anchors": 1406469,
+      "logs": 2639,
+      "recordings": 828
+    }
+  ],
+  "by_city": {
+    "boston": {
+      "logs": 1515,
+      "recordings": 222,
+      "anchors": 3625955,
+      "simulation_ready": 918162,
+      "benchmark_candidates": 230483,
+      "candidate_logs": 484,
+      "candidate_recordings": 208
+    },
+    "las_vegas": {
+      "logs": 1734,
+      "recordings": 102,
+      "anchors": 5687558,
+      "simulation_ready": 1537294,
+      "benchmark_candidates": 611758,
+      "candidate_logs": 584,
+      "candidate_recordings": 98
+    },
+    "pittsburgh": {
+      "logs": 1516,
+      "recordings": 200,
+      "anchors": 5015486,
+      "simulation_ready": 2042323,
+      "benchmark_candidates": 352687,
+      "candidate_logs": 711,
+      "candidate_recordings": 193
+    },
+    "singapore": {
+      "logs": 2349,
+      "recordings": 341,
+      "anchors": 6321111,
+      "simulation_ready": 2042150,
+      "benchmark_candidates": 211541,
+      "candidate_logs": 860,
+      "candidate_recordings": 329
+    }
+  },
+  "benchmark_candidates_by_type_and_city": {
+    "behind_long_vehicle": {
+      "boston": 3380,
+      "las_vegas": 5730,
+      "pittsburgh": 5447,
+      "singapore": 3131
+    },
+    "changing_lane": {
+      "boston": 41,
+      "las_vegas": 65,
+      "pittsburgh": 35,
+      "singapore": 241
+    },
+    "following_lane_with_lead": {
+      "boston": 426,
+      "las_vegas": 377,
+      "pittsburgh": 71,
+      "singapore": 88
+    },
+    "high_lateral_acceleration": {
+      "boston": 5766,
+      "las_vegas": 2,
+      "pittsburgh": 22469,
+      "singapore": 6648
+    },
+    "high_magnitude_speed": {
+      "boston": 146843,
+      "las_vegas": 233565,
+      "pittsburgh": 236866,
+      "singapore": 138272
+    },
+    "low_magnitude_speed": {
+      "boston": 14582,
+      "las_vegas": 29581,
+      "pittsburgh": 30394,
+      "singapore": 31182
+    },
+    "near_multiple_vehicles": {
+      "boston": 19813,
+      "las_vegas": 9098,
+      "pittsburgh": 17415,
+      "singapore": 1180
+    },
+    "starting_left_turn": {
+      "boston": 3279,
+      "las_vegas": 1322,
+      "pittsburgh": 14538,
+      "singapore": 7313
+    },
+    "starting_right_turn": {
+      "boston": 4620,
+      "las_vegas": 1552,
+      "pittsburgh": 10931,
+      "singapore": 8671
+    },
+    "starting_straight_traffic_light_intersection_traversal": {
+      "boston": 1017,
+      "las_vegas": 1658,
+      "pittsburgh": 1643,
+      "singapore": 1342
+    },
+    "stationary_in_traffic": {
+      "boston": 29064,
+      "las_vegas": 172787,
+      "pittsburgh": 11305,
+      "singapore": 11903
+    },
+    "stopping_with_lead": {
+      "boston": 298,
+      "las_vegas": 477,
+      "pittsburgh": 631,
+      "singapore": 100
+    },
+    "traversing_pickup_dropoff": {
+      "boston": 0,
+      "las_vegas": 154844,
+      "pittsburgh": 0,
+      "singapore": 0
+    },
+    "waiting_for_pedestrian_to_cross": {
+      "boston": 1354,
+      "las_vegas": 700,
+      "pittsburgh": 942,
+      "singapore": 1470
+    }
+  },
+  "mini_overlap": {
+    "logs_in_mini_split": 15,
+    "logs_sharing_mini_recording": 84
+  },
+  "checks": {
+    "generated_utc": "2026-10-29T19:22:43+00:00",
+    "results": {
+      "one shard per extracted log (7,353)": true,
+      "no failed logs in failures.json": true,
+      "scenario_id unique": true,
+      "no nulls outside benchmark_scenario_type": true,
+      "tag rows per log equal the scenario catalog": true,
+      "simulation_ready implies every rule": true,
+      "benchmark candidates exclude mini recordings": true
+    },
+    "problems": [],
+    "complete": true
+  }
+}
