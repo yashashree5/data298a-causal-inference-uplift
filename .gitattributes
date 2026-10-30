@@ -6,3 +6,6 @@
 *.png binary
 *.docx binary
 *.zip binary
+
+# Preserve the frozen Pittsburgh cohort's original bytes and recorded SHA-256.
+configs/scenarios/pittsburgh_65_sample.csv -text

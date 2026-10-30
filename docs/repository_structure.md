@@ -79,7 +79,9 @@ replace the YAML contract. Before extending dataset assembly:
 3. Reuse the existing extractors and include only information available at or
    before simulation start.
 4. Validate one feature row per scenario and matching manifest provenance.
-5. Pair the two planner outcomes and calculate `score_pdm - score_idm`.
+5. Keep the five-planner outcome table in long format. For modeling, compare
+   each candidate against IDM with `candidate_score - idm_score`; the existing
+   paired builder still supports IDM/PDM-Closed only.
 6. Assign whole source recordings to splits before fitting any preprocessing;
    multiple log segments from the same recording must stay together. The current
    mini paired builder groups by log; changing that policy is dataset work.
@@ -91,12 +93,18 @@ planner. Preserve the existing long-format outcome files as source evidence.
 
 ## Pittsburgh
 
-`artifacts/pittsburgh_v1/` contains only a planning README. Generated output
-remains ignored by Git. `configs/scenarios/pittsburgh_sample.csv` does not yet
-exist: it must be created from the inspected catalog, not an empty or fabricated
-cohort. Record equal feasible category counts and log coverage before simulations.
+`artifacts/pittsburgh_v1/` contains a planning README for a larger modeling cohort.
+The existing custom pilot is frozen in `configs/scenarios/pittsburgh_65_sample.csv`
+with provenance in the adjacent JSON: 65 scenarios across 13 available categories.
+Its recorded CRLF bytes are preserved by a file-specific `.gitattributes` rule;
+normalizing the file would invalidate hashes in existing experiment artifacts.
 
-The current simulation runners still use the mini split. The merged catalog,
-eligibility, and feature tools also cover the train-city data; that does not add
-Pittsburgh simulation support to these runners. The frozen Pittsburgh manifest
-and five-planner runners are reviewed separately in `feat/five-planner-pittsburgh`.
+`tools/run_five_planners.py` runs IDM, PDM-Closed, PDM-Hybrid, UrbanDriver, and
+GC-PGP on that manifest using `--dataset-split train_pittsburgh`. Generated
+experiments remain ignored under `artifacts/pittsburgh_planners/`. The mini
+workflow remains available. See [additional planners](additional_planners.md)
+for checkpoint verification, mounts, smoke checks, and full batch commands.
+
+The merged data and feature tools remain available alongside these runners.
+Generated weather and ego/agent tables must be supplied or regenerated; joining
+them and extending the two-planner paired builder are separate dataset tasks.

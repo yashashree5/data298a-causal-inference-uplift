@@ -614,8 +614,9 @@ replace that contract. Generated feature tables remain outside Git, and joining
 them to the modeling dataset is separate work. See the [tools guide](tools/README.md)
 and [feature reports](docs/data/ego_agent_features.md).
 
-The refactor retains the mini simulation workflow. Pittsburgh runner support and
-its frozen manifest are reviewed separately in `feat/five-planner-pittsburgh`.
+The runners support the fixed mini cohort and the frozen Pittsburgh cohort.
+See [additional planners](docs/additional_planners.md) for the five supported
+planners, checkpoint requirements, dataset paths, and matched batch commands.
 
 ---
 
