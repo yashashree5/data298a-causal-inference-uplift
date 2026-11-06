@@ -6,24 +6,24 @@ Build `tools/extract_map_features.py` bottom-up: GeoPackage I/O and reprojection
 
 ## Tasks
 
-- [ ] 1. Correct the frame assumption and add map loading
-  - [ ] 1.1 Fix the coordinate-frame assumption in requirements.md
+- [x] 1. Correct the frame assumption and add map loading
+  - [x] 1.1 Fix the coordinate-frame assumption in requirements.md
     - Replace the Assumptions bullet saying GPKG coordinates are the local UTM frame: layers are WGS84 lon/lat (EPSG:4326) and are reprojected per city to `meta.projectedCoordSystem` (sg-one-north 32648, us-ma-boston 32619, us-nv-las-vegas-strip 32611, us-pa-pittsburgh-hazelwood 32617) with `always_xy=True`, as in design D2; Requirement 7 remains the guard
     - _Requirements: 7.1_
-  - [ ] 1.2 Implement GeoPackage I/O and `load_city_map` with tests
+  - [x] 1.2 Implement GeoPackage I/O and `load_city_map` with tests
     - Create `tools/extract_map_features.py` (`from __future__ import annotations`, `_bootstrap` as sibling tools) with constants, `strip_gpkg_header`, `read_layer`, `projected_crs`, `CityMap` and `load_city_map` (lanes by `fid`, connector ids from `lane_connector_fid`, `outgoing` keyed by `exit_lane_fid`, STRtrees on reprojected geometry)
     - Tests: `strip_gpkg_header` round trip for envelope codes 0 and 1; tiny sqlite-built GeoPackage fixture reprojected 4326 → 32617 puts a known UTM point in its lane
     - _Requirements: 2.1, 3.1, 7.1_
 
-- [ ] 2. Implement geometry and traffic-light rules
-  - [ ] 2.1 Implement `point_hits`, `classify_lane_type`, `relevant_connectors`, `resolve_traffic_light`, `geometry_features` with tests
+- [x] 2. Implement geometry and traffic-light rules
+  - [x] 2.1 Implement `point_hits`, `classify_lane_type`, `relevant_connectors`, `resolve_traffic_light`, `geometry_features` with tests
     - `intersects` predicate so boundary points count as inside; "lane wins" over connector; Relevant_Connectors from Ego_Connectors else `outgoing[ego lane]`; most restrictive red > yellow > green, case-insensitive, unknown statuses counted as ignored
     - Property tests on synthetic axis-aligned polygons: **Property 1: lane_type decision table**, **Property 2: in_intersection matches coverage**, **Property 3: Traffic-light resolution**
     - Example tests: point on polygon edge is inside; `relevant_connectors` uses `exit_lane_fid`
     - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 4.1, 4.2, 4.3, 9.1_
 
-- [ ] 3. Implement start-frame status reading
-  - [ ] 3.1 Implement `read_start_status` and `status_worker` with tests
+- [x] 3. Implement start-frame status reading
+  - [x] 3.1 Implement `read_start_status` and `status_worker` with tests
     - One `WHERE lidar_pc_token IN (...)` query per log using `bytes.fromhex`; worker returns `{"log_name", "rows" | "error"}` instead of raising
     - Property test on a temporary SQLite `traffic_light_status` table with several tokens: **Property 4: Start-frame isolation**; test that an unreadable DB yields an `error` entry
     - _Requirements: 4.4, 4.5, 9.1_

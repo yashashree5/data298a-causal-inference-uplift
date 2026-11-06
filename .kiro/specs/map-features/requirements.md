@@ -9,7 +9,7 @@ The tool follows the conventions of `tools/extract_ego_agent_features.py` and `t
 ### Assumptions
 
 - Ego position is (`ego_x`, `ego_y`) from `scenario_ego_agent.parquet` / `scenario_ego_agent_mini_68.parquet`: rear axle, global map frame in UTM metres. The start lidar frame is `start_lidar_token` from `scenario_ego_agent_alignment.parquet`.
-- The GeoPackage `gpkg_geometry_columns` declares SRS 4326, but coordinates are treated as the same local UTM frame as `ego_x`/`ego_y`. This is verified by the frame-alignment check (Requirement 7), not assumed silently.
+- GeoPackage layer coordinates are WGS84 lon/lat (EPSG:4326), as `gpkg_geometry_columns` declares. The Map_Tool reprojects each city's layers to the UTM zone in that map's `meta.projectedCoordSystem` row (sg-one-north EPSG:32648, us-ma-boston EPSG:32619, us-nv-las-vegas-strip EPSG:32611, us-pa-pittsburgh-hazelwood EPSG:32617) with `always_xy=True`, so map geometries share the frame of `ego_x`/`ego_y` (design D2). The frame-alignment check (Requirement 7) remains the guard against a wrong reprojection.
 - A point on a polygon boundary counts as inside the polygon.
 - When the ego point lies inside both a lane polygon and a lane connector polygon, `lane_type` is `lane`. The `verify-mini` comparison confirms this rule against the devkit; design may change it if the devkit disagrees, and the change is documented.
 - "Lane connectors leaving the ego lane" means connectors whose upstream lane fid equals the ego lane fid. Design confirms which of `exit_lane_fid` / `entry_lane_fid` holds the upstream lane by inspecting the map data.
