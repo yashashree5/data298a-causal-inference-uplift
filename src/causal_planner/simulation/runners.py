@@ -100,7 +100,9 @@ def planner_checkpoint_path(planner: str, checkpoint_root: Path) -> Optional[Pat
 
 def planner_overrides(planner: str, checkpoint_root: Path) -> List[str]:
     """Return planner-specific Hydra overrides without changing evaluation settings."""
-    checkpoint = planner_checkpoint_path(planner, checkpoint_root)
+    path = planner_checkpoint_path(planner, checkpoint_root)
+    # Hydra overrides run inside the Linux container, where backslashes are escape characters.
+    checkpoint = path.as_posix() if path else None
     if planner == "pdm-hybrid":
         return [f"planner.pdm_hybrid_planner.checkpoint_path={checkpoint}"]
     if planner == "urban-driver":
