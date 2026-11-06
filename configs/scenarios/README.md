@@ -124,3 +124,118 @@ The current 68-row CSV has SHA-256:
 ```text
 9162d8ae9d81a1068ca40a1d925a363b16a26e8df9026be84c7726c89e5bfcb5
 ```
+
+# Four-city ranked top-5 manifest
+
+[`city4_ranked_top5.csv`](city4_ranked_top5.csv) is the demo cut of one frozen
+ranking of benchmark scenarios across the four nuPlan cities: Boston, Las Vegas,
+Pittsburgh and Singapore. It keeps up to **five scenarios per (city, scenario
+type) group**. [`city4_ranked_top5.json`](city4_ranked_top5.json) is its
+provenance record.
+
+Both files are produced by `python -m tools.freeze_manifest build` (see
+[`tools/freeze_manifest.py`](../../tools/freeze_manifest.py)) from the benchmark
+candidates of the scenario eligibility table
+(`E:\Project\nuplan\processed\scenario_eligibility.parquet`). Rows from drives that
+share a recording with nuPlan mini are excluded before ranking. The files are
+frozen: `build` refuses to overwrite any output path that already exists and
+exits with code 3 without changing anything.
+
+The existing manifests stay unchanged. The mini_68 manifest
+(`idm_mini_sample.csv`) and the Pittsburgh manifest
+(`pittsburgh_65_sample.csv`, `pittsburgh_65_sample.json`) are protected paths that
+`build` never writes. `pittsburgh_65_sample.csv` remains the smoke-test set.
+
+## Columns
+
+Each row identifies one scenario; the CSV holds no trajectories.
+
+| Column | Meaning |
+| --- | --- |
+| `scenario_id` | Unique scenario identifier |
+| `log_name`, `db_file` | Driving log and its database file (`log_name` + `.db`) |
+| `scenario_token` | Anchor LiDAR token, 16 lowercase hex characters |
+| `anchor_timestamp_us` | Anchor timestamp in microseconds |
+| `scenario_type` | Benchmark scenario type (one of the 14) |
+| `all_scenario_tags` | Every original tag on the anchor |
+| `map_name` | Map location |
+| `source_recording` | Drive the scenario comes from |
+| `window_start_us`, `window_end_us` | Extraction window `[start, end)` |
+| `source_city` | One of `boston`, `las_vegas`, `pittsburgh`, `singapore` |
+| `group_rank` | 1-based position of the scenario within its (city, type) group |
+| `split` | `train`, `val` or `test`, assigned per drive |
+
+Rows are sorted by `source_city`, `scenario_type`, `group_rank`. The file is
+UTF-8 with LF line endings and loads with
+`causal_planner.data.scenarios.load_scenarios`.
+
+## How the ranking is built
+
+1. Within each (city, scenario type) group, order candidates by the first 16
+   hexadecimal characters of `sha256("7:<scenario_id>")`, breaking ties by
+   `scenario_id`. The seed is **7** (`--seed` overrides it).
+2. Process the groups of each city from the fewest candidates to the most,
+   breaking ties by type name.
+3. Skip a candidate whose window overlaps a window already accepted from the
+   same drive, across all types. Run every group to exhaustion, so the full
+   ranking holds every non-overlapping candidate.
+4. Give each accepted candidate a `group_rank` of 1, 2, 3, ... within its group.
+5. Assign every drive to exactly one split by a seeded hash, separately per
+   city, targeting 0.70 / 0.15 / 0.15 (`--split-ratios` overrides it). Splits
+   are computed from the drives of the full ranking, so every cut carries the
+   same split for a given drive and a drive never spans two splits.
+
+## How the cuts nest
+
+A cut of size N keeps the rows with `group_rank <= N`. Because every cut comes
+from the same ranking and the same splits, the top-5 cut is a subset of any
+larger cut, such as a top-50 training cut. Larger cuts are written with the same
+tool under a new prefix, for example:
+
+```text
+python -m tools.freeze_manifest build --per-group 5 --per-group 50 --prefix city4_ranked_v2
+```
+
+A group with fewer than N accepted candidates contributes all it has. The
+provenance JSON records, for each of the 56 (city, type) pairs, the candidate
+count, the ranking count, and the selected count and shortfall for each N.
+
+## Where the full ranking lives
+
+The full ranking is written outside Git to
+`E:\Project\nuplan\processed\manifests\city4_ranked_seed7_full.csv`. It has the
+same columns as the cut. Its path, SHA-256 and row counts are recorded under
+`ranking` in `city4_ranked_top5.json`, with `committed: false`.
+
+## Counts and hashes
+
+This README does not repeat row counts. `city4_ranked_top5.json` records the
+SHA-256 and row count of the cut and of the full ranking, row counts per split
+by city and by scenario type, drive counts per split by city, the number of
+mini rows excluded, the eligibility table hash and version, the seed, the split
+ratios and the Git commit.
+
+## Re-running `check`
+
+From the repository root, with the eligibility table available:
+
+```text
+python -m tools.freeze_manifest check --manifest configs/scenarios/city4_ranked_top5.csv
+```
+
+By default `check` reads the provenance from the `.json` file next to the
+manifest (`--provenance` and `--eligibility` override the paths). It prints
+`[PASS]` or `[FAIL]` for each of these checks:
+
+- the scenario loader accepts the manifest;
+- every row matches an eligibility candidate by `scenario_id`, drive and window;
+- no two rows in the same drive have overlapping windows;
+- `group_rank` runs 1..k with no gaps in each group;
+- all rows of a drive carry the same split;
+- the file's SHA-256 matches the provenance;
+- no row comes from a mini recording.
+
+It exits with 0 when all checks pass, 1 when any check fails, and 2 when the
+manifest or eligibility table cannot be read. The full ranking can be checked
+the same way by passing its path to `--manifest` and the cut's JSON to
+`--provenance`.

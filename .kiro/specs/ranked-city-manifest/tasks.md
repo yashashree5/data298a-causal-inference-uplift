@@ -30,7 +30,7 @@ Build `tools/freeze_manifest.py` in two layers. First the pure core over pandas 
     - **Property 7: Seed sensitivity**
     - **Validates: Requirements 2.7**
 
-- [ ] 2. Ranking with overlap filter
+- [x] 2. Ranking with overlap filter
   - [x] 2.1 Implement `rank_and_filter(candidates, seed)`
     - Per city, groups in `(count, type)` order; within a group sort by `(rank_key, scenario_id)`
     - Shared per-drive sorted interval list with `bisect_left`, half-open windows, neighbour-only overlap check
@@ -46,49 +46,49 @@ Build `tools/freeze_manifest.py` in two layers. First the pure core over pandas 
     - Reference uses a pairwise overlap check; also assert no accepted windows overlap within a drive
     - **Validates: Requirements 2.2, 2.3, 8.4**
 
-  - [~] 2.4 Write example tests for the overlap filter
+  - [x] 2.4 Write example tests for the overlap filter
     - Touching windows `[0,10)` and `[10,20)` both accepted; nested window rejected; a rarer type claims a window before a more common type in the same drive
     - _Requirements: 2.2, 2.3_
 
-- [ ] 3. Drive-grouped splits
+- [x] 3. Drive-grouped splits
   - [x] 3.1 Implement `validate_ratios`, `split_counts` and `assign_splits`
     - `validate_ratios` raises `ValueError` for non-finite values, negatives, wrong length, or sum off by more than 1e-9
     - `split_counts` per the design algorithm (round half to even, minimum one drive per positive-ratio split when n >= 3)
     - `assign_splits` per city, drives ordered by `(split_key, drive)`
     - _Requirements: 3.1, 3.2, 3.3, 3.5_
 
-  - [~] 3.2 Write property test for split partition and coverage
+  - [x] 3.2 Write property test for split partition and coverage
     - **Property 8: Split partition and coverage**
     - **Validates: Requirements 3.1, 3.2, 3.3**
 
-  - [~]* 3.3 Write property test for ratio validation
+  - [x]* 3.3 Write property test for ratio validation
     - **Property 10: Ratio validation**
     - **Validates: Requirements 3.5**
 
-  - [~] 3.4 Write example tests for `split_counts`
+  - [x] 3.4 Write example tests for `split_counts`
     - n = 0, 1, 2, 3, 4, 7, 208 with 0.70/0.15/0.15 and a triple with a zero ratio; check 208 gives 146/31/31
     - _Requirements: 3.2, 3.3_
 
-- [ ] 4. Manifest rows and cuts
+- [x] 4. Manifest rows and cuts
   - [x] 4.1 Implement `to_manifest(ranked, splits)` and `make_cut(manifest, n)`
     - Rename to `scenario_type`, lowercase tokens, derive and verify `db_file`, map split per drive, select `MANIFEST_COLUMNS`, sort by `(source_city, scenario_type, group_rank)`, raise `ValueError` on duplicate `scenario_id` or `db_file` mismatch
     - `make_cut` raises `ValueError` for n < 1 and keeps rows with `group_rank <= n` in order
     - _Requirements: 2.6, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.4_
 
-  - [~] 4.2 Write property test for the manifest format contract
+  - [x] 4.2 Write property test for the manifest format contract
     - **Property 11: Manifest format contract**
     - Serialize with `to_csv(..., index=False, lineterminator="\n")` to bytes, assert no `\r`, and load the file with `load_scenarios` from a `tmp_path` copy
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 8.2**
 
-  - [~] 4.3 Write property test for cut nesting and exact prefix
+  - [x] 4.3 Write property test for cut nesting and exact prefix
     - **Property 6: Cut nesting and exact prefix**
     - **Validates: Requirements 2.6, 5.1**
 
-  - [~] 4.4 Write property test that splits are independent of the cut
+  - [x] 4.4 Write property test that splits are independent of the cut
     - **Property 9: Splits are independent of the cut**
     - **Validates: Requirements 3.4, 8.6**
 
-  - [~] 4.5 Write property test for determinism
+  - [x] 4.5 Write property test for determinism
     - **Property 5: Determinism**
     - Build twice, once from a row-shuffled input, and compare CSV bytes
     - **Validates: Requirements 2.5**
@@ -101,39 +101,39 @@ Build `tools/freeze_manifest.py` in two layers. First the pure core over pandas 
     - `build_provenance` assembles the dict shown in the design (eligibility, ranking, manifests, groups, drive counts, git commit or null)
     - _Requirements: 3.6, 5.2, 5.3, 6.1, 6.2, 6.3, 6.4_
 
-  - [~]* 5.2 Write property test for group table and shortfall accounting
+  - [x]* 5.2 Write property test for group table and shortfall accounting
     - **Property 12: Group table and shortfall accounting**
     - **Validates: Requirements 5.2, 5.3**
 
-  - [~]* 5.3 Write property test for provenance count consistency
+  - [x]* 5.3 Write property test for provenance count consistency
     - **Property 13: Provenance counts are consistent**
     - **Validates: Requirements 3.6, 6.2, 6.3**
 
-  - [~]* 5.4 Write example test for a single-drive group
+  - [x]* 5.4 Write example test for a single-drive group
     - A Las-Vegas-like group with one drive appears in `groups_without_rows` for two splits
     - _Requirements: 3.6_
 
-- [ ] 6. Check logic
+- [x] 6. Check logic
   - [x] 6.1 Implement `run_checks(manifest, candidates, mini_recordings, recorded_sha, actual_sha, loader_error)`
     - Evaluate each of the seven checks from the design table independently and return `dict[str, bool]` plus a reason for each failure
     - A missing provenance entry (`recorded_sha` None) fails the SHA-256 check
     - _Requirements: 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8_
 
-  - [~] 6.2 Write property test for corruption detection
+  - [x] 6.2 Write property test for corruption detection
     - **Property 14: Check detects each corruption**
     - Parametrize over the seven corruption kinds; assert exactly the matching check is False, and all True on the clean manifest
     - **Validates: Requirements 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10**
 
-- [~] 7. Checkpoint - Ensure all tests pass
+- [x] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. I/O shell and CLI
+- [x] 8. I/O shell and CLI
   - [x] 8.1 Implement file helpers
     - `read_candidates` (pyarrow schema check, then filtered read with `benchmark_candidate == True`, single `eligibility_version`), `mini_recordings`, `file_sha256` (16 MiB chunks), `git_commit` (None on any failure)
     - `write_csv_atomic` (UTF-8, `newline=""`, LF, returns SHA-256 of written bytes) and `write_json_atomic` (sorted keys, indent 2, trailing LF); temp file in target dir, `os.replace`, temp removed on exception
     - _Requirements: 1.1, 1.3, 4.6, 6.4, 6.5, 7.2_
 
-  - [~]* 8.2 Write unit tests for the file helpers
+  - [x]* 8.2 Write unit tests for the file helpers
     - LF-only CSV and JSON bytes, sorted JSON keys, temp file removed when a write raises, `git_commit` returns None when the subprocess fails
     - _Requirements: 4.6, 6.4, 6.5, 7.2_
 
@@ -144,33 +144,33 @@ Build `tools/freeze_manifest.py` in two layers. First the pure core over pandas 
     - Map missing columns, multiple eligibility versions, duplicate ids, `db_file` mismatch and missing input to `error: ...` with exit 2
     - _Requirements: 1.1, 1.2, 1.3, 2.5, 2.7, 3.3, 3.5, 4.7, 5.4, 6.1, 7.1, 7.3, 7.4_
 
-  - [~] 8.4 Implement the `check` subcommand
+  - [x] 8.4 Implement the `check` subcommand
     - Load manifest, provenance (default: manifest path with `.json` suffix), candidates and mini recordings; capture `load_scenarios` errors; call `run_checks`; print one `[PASS]`/`[FAIL]` line per check; return 0 or 1
     - _Requirements: 8.1, 8.2, 8.7, 8.9, 8.10_
 
-- [ ] 9. End-to-end tests in `tmp_path`
-  - [~] 9.1 Write end-to-end test for `build`
+- [x] 9. End-to-end tests in `tmp_path`
+  - [x] 9.1 Write end-to-end test for `build`
     - Write a small synthetic parquet; run `main(["build", ...])` with all outputs in `tmp_path`; assert ranking, cut and provenance exist, provenance has sorted keys and LF endings, and `git_commit` is null when monkeypatched to fail
     - Second run returns 3 and leaves files byte-identical; protected file names are refused with 3
     - _Requirements: 2.5, 5.2, 5.3, 6.1, 6.4, 6.5, 7.1, 7.3, 9.1_
 
-  - [~] 9.2 Write end-to-end test for `check`
+  - [x] 9.2 Write end-to-end test for `check`
     - Returns 0 on fresh output; returns 1 with the expected `[FAIL]` line after each corruption from Property 14 applied to the written CSV or provenance
     - _Requirements: 8.1, 8.9, 8.10, 9.1_
 
-  - [~] 9.3 Write tests for input errors
+  - [x] 9.3 Write tests for input errors
     - Missing column, invalid ratios and N = 0 return 2 and write no files
     - _Requirements: 1.3, 3.5, 5.4_
 
-- [~] 10. Checkpoint - Ensure all tests pass
+- [x] 10. Checkpoint - Ensure all tests pass
   - Run `.venv\Scripts\python.exe -m pytest -q`; the existing 124 tests and all new tests pass. Ask the user if questions arise.
 
 - [ ] 11. Usage documentation
-  - [~] 11.1 Add a `freeze_manifest.py` section to `tools/README.md`
+  - [x] 11.1 Add a `freeze_manifest.py` section to `tools/README.md`
     - `build` and `check` commands with defaults, output locations (full Ranking outside Git, cuts under `configs/scenarios/`), exit codes
     - _Requirements: 7.4_
 
-  - [~] 11.2 Add the `city4_ranked_top5` files to `configs/scenarios/README.md`
+  - [x] 11.2 Add the `city4_ranked_top5` files to `configs/scenarios/README.md`
     - What the cut is, how it nests in larger cuts, where the full Ranking lives, how to re-run `check`
     - _Requirements: 2.6, 7.4_
 

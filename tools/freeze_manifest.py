@@ -175,8 +175,9 @@ def split_counts(n: int, ratios: tuple[float, float, float]) -> tuple[int, int, 
 
     val and test are ``round(n * ratio)`` (half to even), train takes the rest. For n >= 3 each
     split with a positive ratio gets at least one drive, taken from the larger of val/test (ties:
-    test). A split with ratio 0 gets no drives. For n < 3 there is no minimum; train is clamped to
-    [0, n] and the remainder goes to val, then test.
+    test). For n < 3 there is no minimum; train is clamped to [0, n] and the remainder goes to val,
+    then test. For every n, a split with ratio 0 gets no drives: any drives rounding left in such a
+    split move to the first positive-ratio split in the order train, val, test.
     """
     if n < 0:
         raise ValueError(f"drive count must be non-negative, got {n}")
@@ -188,7 +189,7 @@ def split_counts(n: int, ratios: tuple[float, float, float]) -> tuple[int, int, 
         n_train = min(max(n_train, 0), n)
         rest = n - n_train
         n_val = min(n_val, rest)
-        return n_train, n_val, rest - n_val
+        return _clear_zero_ratio_splits((n_train, n_val, rest - n_val), ratios)
 
     if rv > 0 and n_val == 0:
         n_val = 1
@@ -206,14 +207,22 @@ def split_counts(n: int, ratios: tuple[float, float, float]) -> tuple[int, int, 
         else:
             n_val -= 1
         n_train += 1
-    if rt == 0 and n_train > 0:
-        # Rounding left drives for a zero-ratio train split; give them to val, else test.
-        if rv > 0:
-            n_val += n_train
-        else:
-            n_test += n_train
-        n_train = 0
-    return n_train, n_val, n_test
+    return _clear_zero_ratio_splits((n_train, n_val, n_test), ratios)
+
+
+def _clear_zero_ratio_splits(
+    counts: tuple[int, int, int], ratios: tuple[float, float, float]
+) -> tuple[int, int, int]:
+    """Move drives out of zero-ratio splits into the first positive-ratio split (train, val, test)."""
+    positive = [i for i, r in enumerate(ratios) if r > 0]
+    if not positive:
+        return counts
+    out = list(counts)
+    for i, r in enumerate(ratios):
+        if r == 0 and out[i] > 0:
+            out[positive[0]] += out[i]
+            out[i] = 0
+    return out[0], out[1], out[2]
 
 
 def assign_splits(
@@ -939,9 +948,90 @@ def build(args) -> int:
     return EXIT_OK
 
 
+def _stored_path_key(stored: str) -> str:
+    """Comparable key of a provenance path (relative paths are relative to PROJECT_ROOT)."""
+    path = Path(stored)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    return _path_key(path)
+
+
+def recorded_sha256(provenance: Mapping | None, manifest_path: Path) -> str | None:
+    """SHA-256 recorded for ``manifest_path`` in ``provenance``, or None if absent (Req 8.7).
+
+    Looks under ``provenance["manifests"]`` by path, then at ``provenance["ranking"]`` when its
+    ``path`` is the manifest. Malformed provenance yields None.
+    """
+    if not isinstance(provenance, Mapping):
+        return None
+    target = _path_key(manifest_path)
+    manifests = provenance.get("manifests")
+    if isinstance(manifests, Mapping):
+        for stored, entry in manifests.items():
+            if isinstance(entry, Mapping) and _stored_path_key(str(stored)) == target:
+                sha = entry.get("sha256")
+                return None if sha is None else str(sha)
+    ranking = provenance.get("ranking")
+    if isinstance(ranking, Mapping) and ranking.get("path") is not None:
+        if _stored_path_key(str(ranking["path"])) == target:
+            sha = ranking.get("sha256")
+            return None if sha is None else str(sha)
+    return None
+
+
+def read_manifest(path: Path) -> pd.DataFrame:
+    """Read a manifest CSV with every column as text (tokens keep leading zeros).
+
+    Integer columns stay text so that a malformed value is reported by the check that uses it
+    instead of failing the read; the checks parse them with ``_int_column``.
+    """
+    return pd.read_csv(path, dtype=str, keep_default_na=False, encoding="utf-8")
+
+
 def check(args) -> int:
-    """PLACEHOLDER until task 8.4 implements the check subcommand."""
-    return _error("check is not implemented yet")
+    """Re-validate a frozen manifest against the table and its provenance (Req 8.1-8.10).
+
+    Prints ``[PASS] <name>`` or ``[FAIL] <name>: <reason>`` per check and returns 0 if all pass,
+    1 otherwise. A missing manifest or an unreadable eligibility table is an error (exit 2); a
+    missing or unreadable provenance file fails the SHA-256 check.
+    """
+    manifest_path = Path(args.manifest)
+    if not manifest_path.is_file():
+        return _error(f"manifest not found: {manifest_path}")
+    try:
+        manifest = read_manifest(manifest_path)
+        actual_sha = file_sha256(manifest_path)
+    except Exception as error:
+        return _error(f"cannot read manifest {manifest_path}: {error}")
+
+    eligibility = Path(args.eligibility)
+    try:
+        candidates, _ = read_candidates(eligibility)
+        mini = mini_recordings(eligibility)
+    except (InputError, ValueError, OSError) as error:
+        return _error(str(error))
+    except Exception as error:
+        return _error(f"cannot read eligibility table {eligibility}: {error}")
+
+    provenance_path = Path(args.provenance) if args.provenance else manifest_path.with_suffix(".json")
+    provenance_note = None
+    try:
+        with open(provenance_path, encoding="utf-8") as stream:
+            provenance = json.load(stream)
+    except FileNotFoundError:
+        provenance, provenance_note = None, f"provenance file not found: {_display_path(provenance_path)}"
+    except Exception as error:
+        provenance, provenance_note = None, f"cannot read provenance {_display_path(provenance_path)}: {error}"
+    recorded = recorded_sha256(provenance, manifest_path)
+
+    details = check_details(manifest, candidates, mini, recorded, actual_sha, _load_error(manifest_path))
+    sha_name = "sha256 matches provenance"
+    if provenance_note is not None and not details[sha_name][0]:
+        details[sha_name] = (False, provenance_note)
+
+    for name, (passed, reason) in details.items():
+        print(f"[PASS] {name}" if passed else f"[FAIL] {name}: {reason}")
+    return EXIT_OK if all(passed for passed, _ in details.values()) else EXIT_FAIL
 
 
 COMMANDS = {"build": build, "check": check}
