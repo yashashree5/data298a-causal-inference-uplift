@@ -48,6 +48,51 @@ see the [report](../docs/data/trainval_eligibility.md) for the funnel and catego
 Candidates overlap in time, so the manifest step must still select non-overlapping windows
 per `source_recording` and split train/val/test by recording.
 
+## Ranked four-city manifest
+
+[`freeze_manifest.py`](freeze_manifest.py) turns the benchmark candidates of the eligibility
+table into one seeded ranking across Boston, Las Vegas, Pittsburgh and Singapore. Rows from
+mini recordings are excluded. Each (city, scenario type) group is ordered by
+`sha256("<seed>:<scenario_id>")`. A window is skipped if it overlaps one already accepted from the
+same drive (`source_recording`), across all types. Every drive goes to exactly one of
+train/val/test by a seeded hash, per city. A cut keeps the rows with `group_rank <= N`, so cuts are
+nested: the top-5 demo set is a prefix of any larger training cut, with the same splits.
+
+```powershell
+.\.venv\Scripts\python -m tools.freeze_manifest build   # seed 7, splits 0.70/0.15/0.15, top-5 cut
+.\.venv\Scripts\python -m tools.freeze_manifest build --per-group 5 --per-group 50 --prefix city4_ranked_v2
+.\.venv\Scripts\python -m tools.freeze_manifest check --manifest configs/scenarios/city4_ranked_top5.csv
+.\.venv\Scripts\python -m tools.freeze_manifest check --manifest E:/Project/nuplan/processed/manifests/city4_ranked_seed7_full.csv --provenance configs/scenarios/city4_ranked_top5.json
+```
+
+`build` options: `--eligibility` (default `E:/Project/nuplan/processed/scenario_eligibility.parquet`),
+`--seed` (7), `--split-ratios TRAIN VAL TEST` (0.70 0.15 0.15), `--per-group N` (repeatable,
+default 5), `--output-dir` (`configs/scenarios/`), `--prefix` (`city4_ranked`), `--ranking-output`
+and `--provenance`. `check` takes `--manifest` (required), `--provenance` (default: the manifest
+path with `.json`) and `--eligibility`.
+
+Outputs:
+
+- Full ranking, outside Git: `E:/Project/nuplan/processed/manifests/city4_ranked_seed<seed>_full.csv`.
+- One cut per `--per-group` value: `configs/scenarios/<prefix>_top<N>.csv`.
+- Provenance, written last: `configs/scenarios/<prefix>_top<N>[_top<M>...].json`, with the input
+  hash, parameters, per-group counts and shortfalls, split counts and the SHA-256 of every file.
+
+`build` resolves every target first and overwrites nothing: if any output exists, or a target is
+one of the frozen samples (`idm_mini_sample.csv`, `pittsburgh_65_sample.*`), it writes no file.
+Every written manifest must load with the scenario loader. `check` re-reads a manifest and prints
+`[PASS]`/`[FAIL]` for seven checks: the loader accepts the file, rows are benchmark candidates,
+no overlap per drive, group ranks are consistent, one split per drive, SHA-256 matches
+provenance, and no mini recordings. To check the
+full ranking, pass the provenance of the build that wrote it.
+
+| Exit code | Meaning |
+|---|---|
+| 0 | Build finished, or every check passed |
+| 1 | A check failed, or a written manifest is rejected by the scenario loader |
+| 2 | Invalid argument or input (bad ratios or `--per-group`, missing columns, unreadable table or manifest) |
+| 3 | Refused: an output already exists or is a protected sample; nothing was written |
+
 ## Weather features
 
 [`extract_weather_features.py`](extract_weather_features.py) adds historical weather and sun
