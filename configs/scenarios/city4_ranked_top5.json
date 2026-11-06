@@ -1,0 +1,990 @@
+{
+  "drives_by_split_city": {
+    "test": {
+      "boston": 31,
+      "las_vegas": 15,
+      "pittsburgh": 29,
+      "singapore": 49
+    },
+    "train": {
+      "boston": 146,
+      "las_vegas": 68,
+      "pittsburgh": 135,
+      "singapore": 231
+    },
+    "val": {
+      "boston": 31,
+      "las_vegas": 15,
+      "pittsburgh": 29,
+      "singapore": 49
+    }
+  },
+  "eligibility": {
+    "bytes": 1105388965,
+    "candidate_rows": 1406469,
+    "mini_excluded_rows": 0,
+    "path": "E:/Project/nuplan/processed/scenario_eligibility.parquet",
+    "sha256": "9dd9187e7af644bb64d0ed0d4e7ec575b844f5f301c0e143d0117a46d728d962",
+    "version": "eligibility-v1"
+  },
+  "generated_utc": "2026-11-06T04:27:47+00:00",
+  "git_commit": "9a8ece4ecc8dfd1cf9b088d97656354f83fbec0e",
+  "groups": [
+    {
+      "candidates": 3380,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 9,
+      "scenario_type": "behind_long_vehicle",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 41,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 41,
+      "scenario_type": "changing_lane",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 426,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 15,
+      "scenario_type": "following_lane_with_lead",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 5766,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 189,
+      "scenario_type": "high_lateral_acceleration",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 146843,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 492,
+      "scenario_type": "high_magnitude_speed",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 14582,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 176,
+      "scenario_type": "low_magnitude_speed",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 19813,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 217,
+      "scenario_type": "near_multiple_vehicles",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 3279,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 148,
+      "scenario_type": "starting_left_turn",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 4620,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 165,
+      "scenario_type": "starting_right_turn",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 1017,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 760,
+      "scenario_type": "starting_straight_traffic_light_intersection_traversal",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 29064,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 89,
+      "scenario_type": "stationary_in_traffic",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 298,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 61,
+      "scenario_type": "stopping_with_lead",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 0,
+      "cuts": {
+        "5": {
+          "selected": 0,
+          "shortfall": 5
+        }
+      },
+      "ranked": 0,
+      "scenario_type": "traversing_pickup_dropoff",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 1354,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 28,
+      "scenario_type": "waiting_for_pedestrian_to_cross",
+      "source_city": "boston"
+    },
+    {
+      "candidates": 5730,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 18,
+      "scenario_type": "behind_long_vehicle",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 65,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 60,
+      "scenario_type": "changing_lane",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 377,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 13,
+      "scenario_type": "following_lane_with_lead",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 2,
+      "cuts": {
+        "5": {
+          "selected": 1,
+          "shortfall": 4
+        }
+      },
+      "ranked": 1,
+      "scenario_type": "high_lateral_acceleration",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 233565,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 637,
+      "scenario_type": "high_magnitude_speed",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 29581,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 511,
+      "scenario_type": "low_magnitude_speed",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 9098,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 56,
+      "scenario_type": "near_multiple_vehicles",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 1322,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 114,
+      "scenario_type": "starting_left_turn",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 1552,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 101,
+      "scenario_type": "starting_right_turn",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 1658,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 1364,
+      "scenario_type": "starting_straight_traffic_light_intersection_traversal",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 172787,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 545,
+      "scenario_type": "stationary_in_traffic",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 477,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 99,
+      "scenario_type": "stopping_with_lead",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 154844,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 395,
+      "scenario_type": "traversing_pickup_dropoff",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 700,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 34,
+      "scenario_type": "waiting_for_pedestrian_to_cross",
+      "source_city": "las_vegas"
+    },
+    {
+      "candidates": 5447,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 18,
+      "scenario_type": "behind_long_vehicle",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 35,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 35,
+      "scenario_type": "changing_lane",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 71,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 5,
+      "scenario_type": "following_lane_with_lead",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 22469,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 613,
+      "scenario_type": "high_lateral_acceleration",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 236866,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 855,
+      "scenario_type": "high_magnitude_speed",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 30394,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 456,
+      "scenario_type": "low_magnitude_speed",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 17415,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 198,
+      "scenario_type": "near_multiple_vehicles",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 14538,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 766,
+      "scenario_type": "starting_left_turn",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 10931,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 505,
+      "scenario_type": "starting_right_turn",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 1643,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 1495,
+      "scenario_type": "starting_straight_traffic_light_intersection_traversal",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 11305,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 70,
+      "scenario_type": "stationary_in_traffic",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 631,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 131,
+      "scenario_type": "stopping_with_lead",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 0,
+      "cuts": {
+        "5": {
+          "selected": 0,
+          "shortfall": 5
+        }
+      },
+      "ranked": 0,
+      "scenario_type": "traversing_pickup_dropoff",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 942,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 36,
+      "scenario_type": "waiting_for_pedestrian_to_cross",
+      "source_city": "pittsburgh"
+    },
+    {
+      "candidates": 3131,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 10,
+      "scenario_type": "behind_long_vehicle",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 241,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 236,
+      "scenario_type": "changing_lane",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 88,
+      "cuts": {
+        "5": {
+          "selected": 3,
+          "shortfall": 2
+        }
+      },
+      "ranked": 3,
+      "scenario_type": "following_lane_with_lead",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 6648,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 646,
+      "scenario_type": "high_lateral_acceleration",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 138272,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 959,
+      "scenario_type": "high_magnitude_speed",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 31182,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 492,
+      "scenario_type": "low_magnitude_speed",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 1180,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 23,
+      "scenario_type": "near_multiple_vehicles",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 7313,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 297,
+      "scenario_type": "starting_left_turn",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 8671,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 344,
+      "scenario_type": "starting_right_turn",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 1342,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 1200,
+      "scenario_type": "starting_straight_traffic_light_intersection_traversal",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 11903,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 43,
+      "scenario_type": "stationary_in_traffic",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 100,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 23,
+      "scenario_type": "stopping_with_lead",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 0,
+      "cuts": {
+        "5": {
+          "selected": 0,
+          "shortfall": 5
+        }
+      },
+      "ranked": 0,
+      "scenario_type": "traversing_pickup_dropoff",
+      "source_city": "singapore"
+    },
+    {
+      "candidates": 1470,
+      "cuts": {
+        "5": {
+          "selected": 5,
+          "shortfall": 0
+        }
+      },
+      "ranked": 41,
+      "scenario_type": "waiting_for_pedestrian_to_cross",
+      "source_city": "singapore"
+    }
+  ],
+  "manifests": {
+    "configs/scenarios/city4_ranked_top5.csv": {
+      "per_group": 5,
+      "rows": 259,
+      "rows_by_split_city": {
+        "test": {
+          "boston": 8,
+          "las_vegas": 16,
+          "pittsburgh": 6,
+          "singapore": 7
+        },
+        "train": {
+          "boston": 51,
+          "las_vegas": 43,
+          "pittsburgh": 51,
+          "singapore": 50
+        },
+        "val": {
+          "boston": 6,
+          "las_vegas": 7,
+          "pittsburgh": 8,
+          "singapore": 6
+        }
+      },
+      "rows_by_split_type": {
+        "test": {
+          "behind_long_vehicle": 3,
+          "changing_lane": 0,
+          "following_lane_with_lead": 7,
+          "high_lateral_acceleration": 1,
+          "high_magnitude_speed": 3,
+          "low_magnitude_speed": 4,
+          "near_multiple_vehicles": 4,
+          "starting_left_turn": 1,
+          "starting_right_turn": 2,
+          "starting_straight_traffic_light_intersection_traversal": 3,
+          "stationary_in_traffic": 1,
+          "stopping_with_lead": 2,
+          "traversing_pickup_dropoff": 1,
+          "waiting_for_pedestrian_to_cross": 5
+        },
+        "train": {
+          "behind_long_vehicle": 17,
+          "changing_lane": 15,
+          "following_lane_with_lead": 11,
+          "high_lateral_acceleration": 13,
+          "high_magnitude_speed": 12,
+          "low_magnitude_speed": 16,
+          "near_multiple_vehicles": 16,
+          "starting_left_turn": 17,
+          "starting_right_turn": 14,
+          "starting_straight_traffic_light_intersection_traversal": 16,
+          "stationary_in_traffic": 15,
+          "stopping_with_lead": 15,
+          "traversing_pickup_dropoff": 4,
+          "waiting_for_pedestrian_to_cross": 14
+        },
+        "val": {
+          "behind_long_vehicle": 0,
+          "changing_lane": 5,
+          "following_lane_with_lead": 0,
+          "high_lateral_acceleration": 2,
+          "high_magnitude_speed": 5,
+          "low_magnitude_speed": 0,
+          "near_multiple_vehicles": 0,
+          "starting_left_turn": 2,
+          "starting_right_turn": 4,
+          "starting_straight_traffic_light_intersection_traversal": 1,
+          "stationary_in_traffic": 4,
+          "stopping_with_lead": 3,
+          "traversing_pickup_dropoff": 0,
+          "waiting_for_pedestrian_to_cross": 1
+        }
+      },
+      "sha256": "be400eff9e739e946798ece9daf89db39eb9a945f26a1b00f742d671e83293fe",
+      "split_coverage": {
+        "test": {
+          "groups_with_rows": 25,
+          "groups_without_rows": [
+            "boston/changing_lane",
+            "boston/high_lateral_acceleration",
+            "boston/high_magnitude_speed",
+            "boston/near_multiple_vehicles",
+            "boston/starting_right_turn",
+            "boston/stationary_in_traffic",
+            "boston/traversing_pickup_dropoff",
+            "las_vegas/behind_long_vehicle",
+            "las_vegas/changing_lane",
+            "las_vegas/high_lateral_acceleration",
+            "las_vegas/starting_left_turn",
+            "las_vegas/stopping_with_lead",
+            "pittsburgh/behind_long_vehicle",
+            "pittsburgh/changing_lane",
+            "pittsburgh/high_lateral_acceleration",
+            "pittsburgh/high_magnitude_speed",
+            "pittsburgh/low_magnitude_speed",
+            "pittsburgh/starting_left_turn",
+            "pittsburgh/starting_right_turn",
+            "pittsburgh/stationary_in_traffic",
+            "pittsburgh/traversing_pickup_dropoff",
+            "pittsburgh/waiting_for_pedestrian_to_cross",
+            "singapore/changing_lane",
+            "singapore/following_lane_with_lead",
+            "singapore/near_multiple_vehicles",
+            "singapore/starting_left_turn",
+            "singapore/starting_right_turn",
+            "singapore/starting_straight_traffic_light_intersection_traversal",
+            "singapore/stationary_in_traffic",
+            "singapore/stopping_with_lead",
+            "singapore/traversing_pickup_dropoff"
+          ]
+        },
+        "train": {
+          "groups_with_rows": 53,
+          "groups_without_rows": [
+            "boston/traversing_pickup_dropoff",
+            "pittsburgh/traversing_pickup_dropoff",
+            "singapore/traversing_pickup_dropoff"
+          ]
+        },
+        "val": {
+          "groups_with_rows": 20,
+          "groups_without_rows": [
+            "boston/behind_long_vehicle",
+            "boston/following_lane_with_lead",
+            "boston/high_lateral_acceleration",
+            "boston/low_magnitude_speed",
+            "boston/near_multiple_vehicles",
+            "boston/starting_left_turn",
+            "boston/starting_straight_traffic_light_intersection_traversal",
+            "boston/traversing_pickup_dropoff",
+            "las_vegas/behind_long_vehicle",
+            "las_vegas/following_lane_with_lead",
+            "las_vegas/high_lateral_acceleration",
+            "las_vegas/low_magnitude_speed",
+            "las_vegas/near_multiple_vehicles",
+            "las_vegas/starting_right_turn",
+            "las_vegas/stopping_with_lead",
+            "las_vegas/traversing_pickup_dropoff",
+            "las_vegas/waiting_for_pedestrian_to_cross",
+            "pittsburgh/behind_long_vehicle",
+            "pittsburgh/following_lane_with_lead",
+            "pittsburgh/low_magnitude_speed",
+            "pittsburgh/near_multiple_vehicles",
+            "pittsburgh/starting_left_turn",
+            "pittsburgh/starting_straight_traffic_light_intersection_traversal",
+            "pittsburgh/stationary_in_traffic",
+            "pittsburgh/stopping_with_lead",
+            "pittsburgh/traversing_pickup_dropoff",
+            "pittsburgh/waiting_for_pedestrian_to_cross",
+            "singapore/behind_long_vehicle",
+            "singapore/changing_lane",
+            "singapore/following_lane_with_lead",
+            "singapore/low_magnitude_speed",
+            "singapore/near_multiple_vehicles",
+            "singapore/starting_right_turn",
+            "singapore/starting_straight_traffic_light_intersection_traversal",
+            "singapore/traversing_pickup_dropoff",
+            "singapore/waiting_for_pedestrian_to_cross"
+          ]
+        }
+      }
+    }
+  },
+  "per_group": [
+    5
+  ],
+  "ranking": {
+    "committed": false,
+    "path": "E:/Project/nuplan/processed/manifests/city4_ranked_seed7_full.csv",
+    "rows": 15838,
+    "rows_by_split_city": {
+      "test": {
+        "boston": 296,
+        "las_vegas": 650,
+        "pittsburgh": 738,
+        "singapore": 667
+      },
+      "train": {
+        "boston": 1798,
+        "las_vegas": 2691,
+        "pittsburgh": 3642,
+        "singapore": 3017
+      },
+      "val": {
+        "boston": 296,
+        "las_vegas": 607,
+        "pittsburgh": 803,
+        "singapore": 633
+      }
+    },
+    "rows_by_split_type": {
+      "test": {
+        "behind_long_vehicle": 9,
+        "changing_lane": 55,
+        "following_lane_with_lead": 8,
+        "high_lateral_acceleration": 205,
+        "high_magnitude_speed": 466,
+        "low_magnitude_speed": 231,
+        "near_multiple_vehicles": 75,
+        "starting_left_turn": 196,
+        "starting_right_turn": 152,
+        "starting_straight_traffic_light_intersection_traversal": 723,
+        "stationary_in_traffic": 104,
+        "stopping_with_lead": 48,
+        "traversing_pickup_dropoff": 60,
+        "waiting_for_pedestrian_to_cross": 19
+      },
+      "train": {
+        "behind_long_vehicle": 43,
+        "changing_lane": 261,
+        "following_lane_with_lead": 25,
+        "high_lateral_acceleration": 1038,
+        "high_magnitude_speed": 2052,
+        "low_magnitude_speed": 1155,
+        "near_multiple_vehicles": 355,
+        "starting_left_turn": 917,
+        "starting_right_turn": 804,
+        "starting_straight_traffic_light_intersection_traversal": 3397,
+        "stationary_in_traffic": 504,
+        "stopping_with_lead": 223,
+        "traversing_pickup_dropoff": 275,
+        "waiting_for_pedestrian_to_cross": 99
+      },
+      "val": {
+        "behind_long_vehicle": 3,
+        "changing_lane": 56,
+        "following_lane_with_lead": 3,
+        "high_lateral_acceleration": 206,
+        "high_magnitude_speed": 425,
+        "low_magnitude_speed": 249,
+        "near_multiple_vehicles": 64,
+        "starting_left_turn": 212,
+        "starting_right_turn": 159,
+        "starting_straight_traffic_light_intersection_traversal": 699,
+        "stationary_in_traffic": 139,
+        "stopping_with_lead": 43,
+        "traversing_pickup_dropoff": 60,
+        "waiting_for_pedestrian_to_cross": 21
+      }
+    },
+    "sha256": "398974204e67c8f7127e155aa154233d6e8f81d93aee21e7d8dc1bcb823021b7",
+    "split_coverage": {
+      "test": {
+        "groups_with_rows": 50,
+        "groups_without_rows": [
+          "boston/traversing_pickup_dropoff",
+          "las_vegas/high_lateral_acceleration",
+          "pittsburgh/behind_long_vehicle",
+          "pittsburgh/traversing_pickup_dropoff",
+          "singapore/following_lane_with_lead",
+          "singapore/traversing_pickup_dropoff"
+        ]
+      },
+      "train": {
+        "groups_with_rows": 53,
+        "groups_without_rows": [
+          "boston/traversing_pickup_dropoff",
+          "pittsburgh/traversing_pickup_dropoff",
+          "singapore/traversing_pickup_dropoff"
+        ]
+      },
+      "val": {
+        "groups_with_rows": 48,
+        "groups_without_rows": [
+          "boston/behind_long_vehicle",
+          "boston/traversing_pickup_dropoff",
+          "las_vegas/behind_long_vehicle",
+          "las_vegas/high_lateral_acceleration",
+          "pittsburgh/following_lane_with_lead",
+          "pittsburgh/traversing_pickup_dropoff",
+          "singapore/following_lane_with_lead",
+          "singapore/traversing_pickup_dropoff"
+        ]
+      }
+    }
+  },
+  "seed": 7,
+  "split_ratios": [
+    0.7,
+    0.15,
+    0.15
+  ],
+  "tool_version": "freeze-manifest-v1"
+}

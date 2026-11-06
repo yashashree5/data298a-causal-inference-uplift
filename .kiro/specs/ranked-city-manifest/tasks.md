@@ -174,8 +174,8 @@ Build `tools/freeze_manifest.py` in two layers. First the pure core over pandas 
     - What the cut is, how it nests in larger cuts, where the full Ranking lives, how to re-run `check`
     - _Requirements: 2.6, 7.4_
 
-- [ ] 12. Acceptance run on the real eligibility table
-  - [~] 12.1 Run `build` and `check` on `E:\Project\nuplan\processed\scenario_eligibility.parquet`
+- [x] 12. Acceptance run on the real eligibility table
+  - [x] 12.1 Run `build` and `check` on `E:\Project\nuplan\processed\scenario_eligibility.parquet`
     - `.venv\Scripts\python.exe -m tools.freeze_manifest build` with defaults; writes `E:\Project\nuplan\processed\manifests\city4_ranked_seed7_full.csv`, `configs/scenarios/city4_ranked_top5.csv` and `configs/scenarios/city4_ranked_top5.json`
     - `.venv\Scripts\python.exe -m tools.freeze_manifest check --manifest configs/scenarios/city4_ranked_top5.csv` returns 0; also run `check` on the full Ranking with `--provenance configs/scenarios/city4_ranked_top5.json`
     - Compare with the design Measurements: 15,838 ranked rows, 828 drives (boston 208, las_vegas 98, pittsburgh 193, singapore 329), 53 non-empty groups, two groups under 5 (las_vegas/high_lateral_acceleration, singapore/following_lane_with_lead); report any difference
