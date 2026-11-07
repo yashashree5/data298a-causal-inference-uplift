@@ -11,6 +11,10 @@ requires-python = ">=3.9"
 # Simulation and outcome dependencies remain pinned in infra/docker/.
 dependencies = []
 
+[project.optional-dependencies]
+# For tools/train_baseline.py; install with `pip install -e .[modeling]`.
+modeling = ["scikit-learn>=1.5"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["causal_planner*"]
