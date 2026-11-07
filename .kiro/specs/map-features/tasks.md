@@ -47,11 +47,11 @@ Build `tools/extract_map_features.py` bottom-up: GeoPackage I/O and reprojection
     - Test: `--help` exits 0 without nuplan installed
     - _Requirements: 8.1_
 
-- [-] 6. Checkpoint - Ensure all tests pass
+- [x] 6. Checkpoint - Ensure all tests pass
   - `.venv\Scripts\python.exe -m pytest -q` passes (baseline 2379 passed, 6 skipped, plus the new tests). Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Real-data acceptance run
-  - [~] 7.1 Run smoke and full `build`, then `check`
+- [x] 7. Real-data acceptance run
+  - [x] 7.1 Run smoke and full `build`, then `check`
     - `build --limit-logs 20` first and inspect the `_smoke` outputs; then the full `build` (expected under 5 minutes)
     - `check` must pass all checks, with per-city frame alignment ≥ 0.90 (expected about 99.9–100%); confirm `docs/data/map_features.md` and `.json` are written
     - Report per-city counts for `lane_type`, `in_intersection` and `traffic_light_state`, plus missing counts; fix code and re-run tests if a check fails
