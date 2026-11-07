@@ -181,7 +181,8 @@ scenario; the 136 rows form 68 matched pairs.
 - [Experiment metadata](artifacts/mini_68/experiment.json) records the shared
   setup and source provenance.
 - [Tools](tools/README.md), [Docker](infra/docker/README.md), and
-  [tests](tests/README.md) document reproduction and validation.
+  [tests](tests/README.md) document reproduction and validation;
+  the [Airflow DAG](dags/README.md) chains the tools into one pipeline.
 
 Teammates can inspect the committed sample and results without downloading
 nuPlan or rerunning simulations. From the repository root, the fast validation
@@ -588,8 +589,9 @@ Responsibilities may evolve as the technical design is finalized, while individu
 ├── docs/
 │   ├── data/                  # Eligibility and feature reports
 │   └── research/
+├── dags/                      # Airflow DAG running the data pipeline and planner runs
 ├── infra/
-│   └── docker/                # Pinned nuPlan environments
+│   └── docker/                # Pinned nuPlan environments and local Airflow
 ├── notebooks/                 # Dataset exploration
 ├── tests/                     # Fast validation tests
 └── tools/                     # Planner entry points and data/feature tools
