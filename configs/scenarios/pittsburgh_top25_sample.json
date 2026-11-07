@@ -1,0 +1,31 @@
+{
+  "scenario_count": 298,
+  "source": "city4_ranked_seed7_full.csv (frozen ranking, seed 7; gold/v1 on Drive)",
+  "source_sha256": "398974204e67c8f7127e155aa154233d6e8f81d93aee21e7d8dc1bcb823021b7",
+  "filter": "source_city == 'pittsburgh' and group_rank <= 25",
+  "category_counts": {
+    "behind_long_vehicle": 18,
+    "changing_lane": 25,
+    "following_lane_with_lead": 5,
+    "high_lateral_acceleration": 25,
+    "high_magnitude_speed": 25,
+    "low_magnitude_speed": 25,
+    "near_multiple_vehicles": 25,
+    "starting_left_turn": 25,
+    "starting_right_turn": 25,
+    "starting_straight_traffic_light_intersection_traversal": 25,
+    "stationary_in_traffic": 25,
+    "stopping_with_lead": 25,
+    "waiting_for_pedestrian_to_cross": 25
+  },
+  "split_counts": {
+    "train": 222,
+    "val": 45,
+    "test": 31
+  },
+  "logs": 194,
+  "source_recordings": 132,
+  "overlap_with_pittsburgh_65": 42,
+  "sample_sha256": "d00fc88716190acf07bebca25b832c68d41ed38a5d5f72d93924f059efd508da",
+  "linear": "298-53"
+}
