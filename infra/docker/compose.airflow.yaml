@@ -1,0 +1,108 @@
+# Local Airflow (LocalExecutor + Postgres) for the nuplan_pipeline DAG. See dags/README.md.
+#   docker compose --project-directory . -f infra/docker/compose.airflow.yaml up -d --build
+# UI: http://localhost:8080 (airflow / airflow). Paths come from .env in the repository root.
+name: data298a-airflow
+
+x-airflow: &airflow
+  build:
+    context: .
+    dockerfile: infra/docker/Dockerfile.airflow
+  image: data298a/airflow:2.10.5
+  # Group 0 so the airflow user can use the mounted Docker socket.
+  user: "${AIRFLOW_UID:-50000}:0"
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/repo/dags
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    NUPLAN_REPO_DIR: /opt/repo
+    # Airflow Variables read by the DAG (AIRFLOW_VAR_<NAME>): container paths ...
+    AIRFLOW_VAR_DATA_ROOT: /data
+    AIRFLOW_VAR_PROC_ROOT: /processed
+    AIRFLOW_VAR_ZIPS_DIR: /zips
+    AIRFLOW_VAR_SCRATCH: /scratch
+    AIRFLOW_VAR_CITIES: ${NUPLAN_CITIES:-}
+    # ... and paths as the Docker daemon sees them, for the planner container.
+    AIRFLOW_VAR_HOST_REPO_DIR: ${AIRFLOW_DOCKER_REPO_DIR:?Set AIRFLOW_DOCKER_REPO_DIR in .env}
+    AIRFLOW_VAR_HOST_DATA_ROOT: ${AIRFLOW_DOCKER_DATA_ROOT:?Set AIRFLOW_DOCKER_DATA_ROOT in .env}
+    AIRFLOW_VAR_HOST_ARTIFACT_ROOT: ${AIRFLOW_DOCKER_ARTIFACT_ROOT:-${AIRFLOW_DOCKER_REPO_DIR}/artifacts/additional_planners}
+    AIRFLOW_VAR_HOST_CHECKPOINT_ROOT: ${AIRFLOW_DOCKER_CHECKPOINT_ROOT:-${AIRFLOW_DOCKER_REPO_DIR}/checkpoints}
+  volumes:
+    - type: bind
+      source: .
+      target: /opt/repo
+      read_only: true
+    # extract_logs writes new DBs under nuplan-v1.1/trainval, so the dataset is writable here.
+    - type: bind
+      source: ${NUPLAN_HOST_DATA_ROOT:?Set NUPLAN_HOST_DATA_ROOT in .env}
+      target: /data
+    - type: bind
+      source: ${NUPLAN_HOST_PROCESSED_ROOT:?Set NUPLAN_HOST_PROCESSED_ROOT in .env}
+      target: /processed
+    - type: bind
+      source: ${NUPLAN_HOST_ZIPS_DIR:?Set NUPLAN_HOST_ZIPS_DIR in .env}
+      target: /zips
+      read_only: true
+    - type: bind
+      source: ${NUPLAN_HOST_SCRATCH:?Set NUPLAN_HOST_SCRATCH in .env}
+      target: /scratch
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+  airflow-init:
+    <<: *airflow
+    entrypoint: /bin/bash
+    # Migrates the database, creates the UI user, then the simulation pool (5 slots).
+    command:
+      - -c
+      - /entrypoint airflow version && airflow pools set simulation 5 "Planner simulations (CPU bound)"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+    volumes: []
+
+  airflow-webserver:
+    <<: *airflow
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  airflow-db:
+  airflow-logs:
