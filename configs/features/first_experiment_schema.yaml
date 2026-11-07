@@ -7,7 +7,8 @@
 # Field attributes:
 #   name                          logical field name used in the feature contract
 #   column                        column name in a committed artifact (null if not extracted yet)
-#   artifacts                     committed artifacts that contain the column: manifest, outcomes
+#   artifacts                     artifacts that contain the column: manifest, outcomes,
+#                                 features (scenario_features*.parquet, tools/build_scenario_features.py)
 #   source                        where the value comes from (artifact, nuPlan DB/devkit, or derivation)
 #   dtype                         string | int64 | float64 | bool | list[string]
 #   required                      must be present for the first modeling experiment
@@ -187,7 +188,7 @@ groups:
         notes: Same look-ahead caveat as scenario_type.
       - name: map_name
         column: map_name
-        artifacts: [manifest, outcomes]
+        artifacts: [manifest, outcomes, features]
         source: manifest; log.map_version
         dtype: string
         required: true
@@ -307,35 +308,35 @@ groups:
           Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_speed
         column: ego_speed
-        artifacts: []
+        artifacts: [features]
         source: devkit initial_ego_state.dynamic_car_state.speed (m/s)
         dtype: float64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_acceleration
         column: ego_acceleration
-        artifacts: []
+        artifacts: [features]
         source: devkit initial_ego_state.dynamic_car_state.acceleration (m/s^2)
         dtype: float64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: ego_yaw_rate
         column: ego_yaw_rate
-        artifacts: []
+        artifacts: [features]
         source: devkit initial_ego_state.dynamic_car_state.angular_velocity (rad/s)
         dtype: float64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: route_length_m
@@ -361,102 +362,102 @@ groups:
         missing_policy: null_with_indicator
         notes: High-cardinality map identifier; memorizes location, so not a model input.
       - name: lane_type
-        column: null
-        artifacts: []
+        column: lane_type
+        artifacts: [features]
         source: map layer of lane_id (lane | lane_connector)
         dtype: string
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: in_intersection
-        column: null
-        artifacts: []
+        column: in_intersection
+        artifacts: [features]
         source: map_api.is_in_layer(ego point, SemanticMapLayer.INTERSECTION)
         dtype: bool
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: traffic_light_state
-        column: null
-        artifacts: []
+        column: traffic_light_state
+        artifacts: [features]
         source: scenario.get_traffic_light_status_at_iteration(0) for the ego's current or next lane connector
         dtype: string
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
         notes: Values green | yellow | red | unknown | none; "none" means no controlling light, not missing.
       - name: num_tracked_agents
         column: num_tracked_agents
-        artifacts: []
+        artifacts: [features]
         source: len(scenario.initial_tracked_objects.tracked_objects)
         dtype: int64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: num_vehicles
         column: num_vehicles
-        artifacts: []
+        artifacts: [features]
         source: initial tracked objects with TrackedObjectType.VEHICLE
         dtype: int64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: num_pedestrians
         column: num_pedestrians
-        artifacts: []
+        artifacts: [features]
         source: initial tracked objects with TrackedObjectType.PEDESTRIAN
         dtype: int64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: nearest_agent_distance_m
         column: nearest_agent_distance_m
-        artifacts: []
+        artifacts: [features]
         source: minimum center distance from ego to any vehicle, pedestrian or bicycle at iteration 0
         dtype: float64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
         notes: >
           Null (with indicator) when no agent is present.
           Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: nearest_agent_relative_speed_mps
         column: nearest_agent_relative_speed_mps
-        artifacts: []
+        artifacts: [features]
         source: closing speed between ego and the nearest agent at iteration 0
         dtype: float64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: agents_within_50m
         column: agents_within_50m
-        artifacts: []
+        artifacts: [features]
         source: count of tracked agents within 50 m of ego at iteration 0 (traffic density)
         dtype: int64
         required: true
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: exclude_pair
         notes: Extracted to D:\nuplan\processed\features\ego_agent\, not yet integrated into manifest/outcomes.
       - name: lane_curvature
@@ -477,106 +478,106 @@ groups:
     role: covariate
     fields:
       - name: weather_temperature_c
-        column: null
-        artifacts: []
+        column: weather_temperature_c
+        artifacts: [features]
         source: Open-Meteo temperature_2m (instant) at the hour at or before simulation start
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_relative_humidity_pct
-        column: null
-        artifacts: []
+        column: weather_relative_humidity_pct
+        artifacts: [features]
         source: Open-Meteo relative_humidity_2m (instant)
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_cloud_cover_pct
-        column: null
-        artifacts: []
+        column: weather_cloud_cover_pct
+        artifacts: [features]
         source: Open-Meteo cloud_cover (instant)
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_wind_speed_kmh
-        column: null
-        artifacts: []
+        column: weather_wind_speed_kmh
+        artifacts: [features]
         source: Open-Meteo wind_speed_10m (instant)
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_code
-        column: null
-        artifacts: []
+        column: weather_code
+        artifacts: [features]
         source: Open-Meteo weather_code (instant, WMO code)
         dtype: int64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
         notes: Categorical; encode as categories, not as an ordered number.
       - name: weather_precipitation_mm
-        column: null
-        artifacts: []
+        column: weather_precipitation_mm
+        artifacts: [features]
         source: Open-Meteo precipitation, sum over the hour before the weather hour label
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_rain_mm
-        column: null
-        artifacts: []
+        column: weather_rain_mm
+        artifacts: [features]
         source: Open-Meteo rain, sum over the preceding hour
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_wind_gusts_kmh
-        column: null
-        artifacts: []
+        column: weather_wind_gusts_kmh
+        artifacts: [features]
         source: Open-Meteo wind_gusts_10m, maximum over the preceding hour
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
       - name: weather_precipitation_prev_3h_mm
-        column: null
-        artifacts: []
+        column: weather_precipitation_prev_3h_mm
+        artifacts: [features]
         source: derived; precipitation summed over the three hours ending at the weather hour
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
         notes: Wet-road proxy; uses only hours before simulation start.
       - name: sun_elevation_deg
-        column: null
-        artifacts: []
+        column: sun_elevation_deg
+        artifacts: [features]
         source: derived; NOAA solar elevation at window_start_us for the city point
         dtype: float64
         required: false
         available_before_simulation: true
         model_feature: true
-        status: unavailable
+        status: available
         missing_policy: null_with_indicator
         notes: All train-city candidates were recorded in daylight (07:00-17:00 local), so this varies little.
 
