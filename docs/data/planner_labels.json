@@ -1,16 +1,19 @@
 {
   "tool_version": "planner-labels-v1",
-  "generated_utc": "2026-11-07T01:48:27+00:00",
+  "generated_utc": "2026-11-07T02:45:49+00:00",
   "experiment": "pittsburgh_65_five",
   "rows": {
-    "outcomes": 130,
+    "outcomes": 325,
     "labels": 65,
     "modeling": 65,
     "sample": 65
   },
   "planners": [
     "idm",
-    "pdm_closed"
+    "pdm_closed",
+    "pdm_hybrid",
+    "urban_driver",
+    "gc_pgp"
   ],
   "scores": {
     "idm": {
@@ -24,6 +27,24 @@
       "mean": 0.862910025071251,
       "label_mean": 0.862910025071251,
       "official": 0.8629100250712509
+    },
+    "pdm_hybrid": {
+      "rows": 65,
+      "mean": 0.8629402007986449,
+      "label_mean": 0.8629402007986449,
+      "official": 0.862940200798645
+    },
+    "urban_driver": {
+      "rows": 65,
+      "mean": 0.455132469143035,
+      "label_mean": 0.455132469143035,
+      "official": 0.455132469143035
+    },
+    "gc_pgp": {
+      "rows": 65,
+      "mean": 0.4695531575806652,
+      "label_mean": 0.4695531575806652,
+      "official": 0.4695531575806652
     }
   },
   "deltas": {
@@ -32,11 +53,32 @@
       "median": 0.00790853003848424,
       "std": 0.3377091866799492,
       "share_positive": 0.5538461538461539
+    },
+    "delta_pdm_hybrid_vs_idm": {
+      "mean": 0.18663612664059298,
+      "median": 0.007888748725657035,
+      "std": 0.3377028572998735,
+      "share_positive": 0.5538461538461539
+    },
+    "delta_urban_driver_vs_idm": {
+      "mean": -0.22117160501501681,
+      "median": 0.0,
+      "std": 0.5147906727852571,
+      "share_positive": 0.16923076923076924
+    },
+    "delta_gc_pgp_vs_idm": {
+      "mean": -0.20675091657738665,
+      "median": -0.05369935104564827,
+      "std": 0.47611075839101286,
+      "share_positive": 0.12307692307692308
     }
   },
   "best_planner_counts": {
-    "idm": 29,
-    "pdm_closed": 36
+    "idm": 28,
+    "pdm_closed": 23,
+    "pdm_hybrid": 8,
+    "urban_driver": 5,
+    "gc_pgp": 1
   },
   "failed": {},
   "fold_sizes": {

@@ -36,10 +36,10 @@ Add `tools/build_planner_labels.py` (Python) with `build` and `check` subcommand
   - [x] 3.3 Checkpoint: run `.venv\Scripts\python.exe -m pytest -q -p no:subtests` (baseline 8,776 passed, 6 skipped, plus the new tests); ensure all tests pass, ask the user if questions arise
     - _Requirements: 7.1, 7.3_
 
-- [ ] 4. Build and check real data
+- [x] 4. Build and check real data
   - [x] 4.1 Run `.venv\Scripts\python.exe -m tools.build_planner_labels build --planners idm,pdm-closed`, then `check` (planners read from provenance); report row counts (expect 130 outcome rows and 65 label rows minus exclusions), excluded scenarios with reasons, mean scores vs official scores, delta summary, `best_planner` counts, fold sizes and feature coverage
     - _Requirements: 1.3, 1.4, 2.5, 3.2, 4.1, 5.7, 6.4_
-  - [~] 4.2 After the planner containers finish, confirm each of the five logs `C:\nuplan\logs\pgh65_<planner>.log` ends with a JSON summary, then run `build --overwrite` and `check` with all five planners (default `--planners`); report the same figures (expect 325 outcome rows) and the regenerated `docs/data/planner_labels.md` / `.json`
+  - [x] 4.2 After the planner containers finish, confirm each of the five logs `C:\nuplan\logs\pgh65_<planner>.log` ends with a JSON summary, then run `build --overwrite` and `check` with all five planners (default `--planners`); report the same figures (expect 325 outcome rows) and the regenerated `docs/data/planner_labels.md` / `.json`
     - _Requirements: 1.1, 1.3, 2.1, 5.2, 5.7, 6.3, 6.4_
 
 ## Notes
