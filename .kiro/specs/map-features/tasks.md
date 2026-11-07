@@ -28,8 +28,8 @@ Build `tools/extract_map_features.py` bottom-up: GeoPackage I/O and reprojection
     - Property test on a temporary SQLite `traffic_light_status` table with several tokens: **Property 4: Start-frame isolation**; test that an unreadable DB yields an `error` entry
     - _Requirements: 4.4, 4.5, 9.1_
 
-- [ ] 4. Implement `build` and the CLI
-  - [ ] 4.1 Implement `load_frames`, `write_parquet`, `build` and `main` with tests
+- [x] 4. Implement `build` and the CLI
+  - [x] 4.1 Implement `load_frames`, `write_parquet`, `build` and `main` with tests
     - Argparse subcommands and all flags/defaults from the design CLI table, including `--limit-logs` (outputs get `_smoke` suffix) and `--workers`
     - Input validation (missing paths and columns exit 2 before any output); per-city geometry in the main process; trainval status reads in `ProcessPoolExecutor`; mini DBs copied from the zip to `--scratch/map_mini/` and deleted in `finally`
     - Null-out rules and `*_missing` columns; write `scenario_map.parquet`, `scenario_map_mini_68.parquet`, `scenario_map_alignment.parquet` and `<reference-dir>/mini_68_reference_input.parquet` via `.tmp` + `os.replace` with `map_features_provenance` metadata
@@ -37,21 +37,21 @@ Build `tools/extract_map_features.py` bottom-up: GeoPackage I/O and reprojection
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.4, 3.3, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5_
 
 - [ ] 5. Implement `check`, `verify-mini` and the devkit reference script
-  - [ ] 5.1 Implement `check` and `verify_mini` with tests
+  - [~] 5.1 Implement `check` and `verify_mini` with tests
     - The seven checks from the design, `--frame-threshold` (default 0.90), PASS/FAIL lines, `docs/data/map_features.md` and `map_features.json` (per-city value counts, missing counts, check results, shapely/pyproj listed as added dependencies)
     - `verify-mini` prints `agree n/68` per feature, lists disagreeing `scenario_id`s with both values, exits 0 only on full agreement
     - Tests: a city with 0.5 share yields a FAIL line naming the city and share; `verify-mini` on hand-built tables with one disagreement exits 1 and lists it
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3, 8.1, 8.2, 8.3_
-  - [ ] 5.2 Implement `tools/devkit_map_reference.py` with a `--help` test
+  - [~] 5.2 Implement `tools/devkit_map_reference.py` with a `--help` test
     - Lazy nuplan imports; per-row devkit LANE / LANE_CONNECTOR / INTERSECTION lookup, `outgoing_edges` fallback and the restrictiveness rule as in the design pseudocode; writes `devkit_map_mini_68.parquet`
     - Test: `--help` exits 0 without nuplan installed
     - _Requirements: 8.1_
 
-- [ ] 6. Checkpoint - Ensure all tests pass
+- [~] 6. Checkpoint - Ensure all tests pass
   - `.venv\Scripts\python.exe -m pytest -q` passes (baseline 2379 passed, 6 skipped, plus the new tests). Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 7. Real-data acceptance run
-  - [ ] 7.1 Run smoke and full `build`, then `check`
+  - [~] 7.1 Run smoke and full `build`, then `check`
     - `build --limit-logs 20` first and inspect the `_smoke` outputs; then the full `build` (expected under 5 minutes)
     - `check` must pass all checks, with per-city frame alignment ≥ 0.90 (expected about 99.9–100%); confirm `docs/data/map_features.md` and `.json` are written
     - Report per-city counts for `lane_type`, `in_intersection` and `traffic_light_state`, plus missing counts; fix code and re-run tests if a check fails

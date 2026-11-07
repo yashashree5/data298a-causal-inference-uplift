@@ -359,7 +359,7 @@ if shapely is not None:
     import zipfile
     import pyarrow.parquet as pq
     from tools.extract_map_features import (  # noqa: E402
-        MAP_COLUMNS, AUDIT_COLUMNS, SUBSET_CANDIDATES, SUBSET_MINI, assemble_features, audit_table, main,
+        FRAME_COLUMNS, MAP_COLUMNS, AUDIT_COLUMNS, SUBSET_CANDIDATES, SUBSET_MINI, assemble_features, audit_table, main,
         map_table, reference_input, write_parquet,
     )
 
@@ -378,7 +378,7 @@ def synthetic_frame(rng: random.Random, n: int) -> "pd.DataFrame":
             "ego_y": None if null_ego else rng.randint(-2, 52) / 2,
             "start_lidar_token": None if rng.random() < 0.15 else f"{rng.randint(0, 5):016x}",
         })
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows, columns=FRAME_COLUMNS)  # columns kept when n == 0, as in load_frames
     for c in ("subset", "scenario_id", "log_name", "map_name", "map_version", "db_file", "start_lidar_token"):
         df[c] = df[c].astype("string")
     return df
@@ -496,15 +496,18 @@ class BuildCliTests(unittest.TestCase):
                          ["scenario_map.parquet", "scenario_map_alignment.parquet", "scenario_map_mini_68.parquet"])
         cand = pd.read_parquet(out / "scenario_map.parquet").set_index("scenario_id")
         self.assertEqual(list(cand.reset_index().columns), MAP_COLUMNS)
-        self.assertEqual(cand["lane_type"].tolist(), ["lane", "lane_connector", "none", None, "lane"])
-        self.assertEqual(cand["in_intersection"].tolist(), [False, True, False, None, False])
+        def values(col):  # nullable parquet columns read back as pd.NA
+            return [None if pd.isna(v) else v for v in col.tolist()]
+
+        self.assertEqual(values(cand["lane_type"]), ["lane", "lane_connector", "none", None, "lane"])
+        self.assertEqual(values(cand["in_intersection"]), [False, True, False, None, False])
         # logA:1 on lane 7 -> outgoing 55 (green) + 56 (RED) -> red; logA:2 on connector 55 -> green;
         # logA:3 off-map -> none; logA:4 null ego; logB DB missing -> null
-        self.assertEqual(cand["traffic_light_state"].tolist(), ["red", "green", "none", None, None])
+        self.assertEqual(values(cand["traffic_light_state"]), ["red", "green", "none", None, None])
         self.assertEqual(cand["traffic_light_state_missing"].tolist(), [False, False, False, True, True])
         mini = pd.read_parquet(out / "scenario_map_mini_68.parquet")
         self.assertEqual(mini["scenario_id"].tolist(), ["logM:6", "logM:7"])
-        self.assertEqual(mini["traffic_light_state"].tolist(), ["yellow", None])  # logM:7 has an unknown map
+        self.assertEqual(values(mini["traffic_light_state"]), ["yellow", None])  # logM:7 has an unknown map
         self.assertEqual(mini["lane_type_missing"].tolist(), [False, True])
         audit = pd.read_parquet(out / "scenario_map_alignment.parquet")
         self.assertEqual(list(audit.columns), AUDIT_COLUMNS)
