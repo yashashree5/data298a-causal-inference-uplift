@@ -36,18 +36,18 @@ Build `tools/extract_map_features.py` bottom-up: GeoPackage I/O and reprojection
     - Tests: **Property 5: Missing indicators and row coverage** on synthetic frames with null ego points, unknown maps and missing DBs; missing input path exits 2 with no outputs; missing column exits 2 and is named; no `.tmp` left after write
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.4, 3.3, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 5. Implement `check`, `verify-mini` and the devkit reference script
-  - [~] 5.1 Implement `check` and `verify_mini` with tests
+- [x] 5. Implement `check`, `verify-mini` and the devkit reference script
+  - [x] 5.1 Implement `check` and `verify_mini` with tests
     - The seven checks from the design, `--frame-threshold` (default 0.90), PASS/FAIL lines, `docs/data/map_features.md` and `map_features.json` (per-city value counts, missing counts, check results, shapely/pyproj listed as added dependencies)
     - `verify-mini` prints `agree n/68` per feature, lists disagreeing `scenario_id`s with both values, exits 0 only on full agreement
     - Tests: a city with 0.5 share yields a FAIL line naming the city and share; `verify-mini` on hand-built tables with one disagreement exits 1 and lists it
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3, 8.1, 8.2, 8.3_
-  - [~] 5.2 Implement `tools/devkit_map_reference.py` with a `--help` test
+  - [x] 5.2 Implement `tools/devkit_map_reference.py` with a `--help` test
     - Lazy nuplan imports; per-row devkit LANE / LANE_CONNECTOR / INTERSECTION lookup, `outgoing_edges` fallback and the restrictiveness rule as in the design pseudocode; writes `devkit_map_mini_68.parquet`
     - Test: `--help` exits 0 without nuplan installed
     - _Requirements: 8.1_
 
-- [~] 6. Checkpoint - Ensure all tests pass
+- [-] 6. Checkpoint - Ensure all tests pass
   - `.venv\Scripts\python.exe -m pytest -q` passes (baseline 2379 passed, 6 skipped, plus the new tests). Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 7. Real-data acceptance run
