@@ -26,6 +26,11 @@ This also checks that the EDA notebook and draft feature schema are valid JSON.
 These quick checks need Python 3.9 or later, but no Docker or downloaded nuPlan
 databases. They do not run a simulation or verify the 0.76 score.
 
+Pull requests to `main` run the same suite plus the mini_68 validator on Linux
+and Windows ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)). See
+[`.github/README.md`](../.github/README.md) for the temporary map-feature
+deselections and branch-protection notes.
+
 ## PDM-Closed checks
 
 `test_pdm_mini_reproducer.py` checks that PDM and matched IDM use identical
