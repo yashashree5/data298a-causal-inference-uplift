@@ -224,8 +224,10 @@ def pipeline_steps() -> List[Step]:
     )
     steps += [
         # Score difference vs IDM from finished planner runs (298-51). --overwrite so Airflow
-        # retries and re-triggers can replace the previous experiment's tables.
+        # retries and re-triggers can replace the previous experiment's tables. chmod: planner
+        # containers create $ARTIFACT_ROOT/$EXPERIMENT as uid 1000; Airflow writes outcomes there.
         Step("build_labels",
+             f'chmod -R a+rwX "$ARTIFACT_ROOT/$EXPERIMENT" 2>/dev/null; '
              f"{PYTHON} -m tools.build_planner_labels build {label_flags} --overwrite && "
              f"{PYTHON} -m tools.build_planner_labels check {label_flags}",
              upstream=tuple(planner_task_id(p) for p in PLANNERS)),
