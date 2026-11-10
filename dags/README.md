@@ -83,16 +83,18 @@ Trigger with a JSON configuration ("Trigger DAG w/ config", or
 | Key | Default | Meaning |
 |---|---|---|
 | `cities` | Variable `CITIES` (all cities) | List or comma string of `boston`, `las_vegas`, `pittsburgh`, `singapore` |
-| `planner_limit` | whole sample | Run only the first N scenarios per planner |
+| `planner_limit` | whole sample | Run only the first N scenarios per planner; also sets map `--limit-logs N` unless overridden |
+| `map_limit_logs` | same as `planner_limit` | Map smoke: first N trainval logs (`scenario_map_smoke.parquet`) |
 | `experiment` | `airflow_<logical date>` | Planner experiment folder; the runner refuses to overwrite one |
-| `sample` | `configs/scenarios/pittsburgh_65_sample.csv` | Scenario CSV the planners run |
+| `sample` | `configs/scenarios/pittsburgh_65_sample.csv` | Scenario CSV the planners **and** `build_labels` use (must match what was simulated) |
 | `dataset_split` | `train_pittsburgh` | Split folder under `nuplan-v1.1/splits/` |
 | `manifest` | `configs/scenarios/city4_ranked_top5.csv` | Frozen manifest re-validated before simulation |
 
-Smoke run (Pittsburgh, one scenario per planner):
+Smoke run (Pittsburgh, one scenario per planner; sample must match the limited run so labels pass):
 
 ```json
-{"cities": "pittsburgh", "planner_limit": 1, "experiment": "airflow_smoke"}
+{"cities": "pittsburgh", "planner_limit": 1, "experiment": "airflow_smoke",
+ "sample": "configs/scenarios/airflow_smoke_1_sample.csv"}
 ```
 
 Without Docker Compose, set the Airflow Variables `DATA_ROOT`, `PROC_ROOT`,

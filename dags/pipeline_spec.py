@@ -48,6 +48,8 @@ DATA_ENV = {
     "PLANNER_SAMPLE": "{{ dag_run.conf.get('sample') or var.value.get('PLANNER_SAMPLE', "
                       "'configs/scenarios/pittsburgh_65_sample.csv') }}",
     "EXPERIMENT": "{{ dag_run.conf.get('experiment') or 'airflow_' ~ ts_nodash }}",
+    # Smoke: first N trainval logs (writes scenario_map_smoke.parquet). Empty runs the full set.
+    "MAP_LIMIT_FLAGS": "{{ map_limit_flags(dag_run.conf) }}",
 }
 # The planner container is started by the host's Docker daemon, so HOST_* are host paths.
 PLANNER_ENV = {
@@ -89,6 +91,23 @@ def planner_limit_flags(conf: Optional[Mapping]) -> str:
     if limit < 1:
         raise ValueError(f"planner_limit must be a positive integer, got {value!r}")
     return f"--limit {limit}"
+
+
+def map_limit_flags(conf: Optional[Mapping]) -> str:
+    """`--limit-logs N` for map smoke runs.
+
+    Uses conf["map_limit_logs"] when set; otherwise reuses conf["planner_limit"] so a normal
+    smoke config also keeps map extraction short. Empty runs every trainval log.
+    """
+    value = (conf or {}).get("map_limit_logs")
+    if value in (None, ""):
+        value = (conf or {}).get("planner_limit")
+    if value in (None, ""):
+        return ""
+    limit = int(value)
+    if limit < 1:
+        raise ValueError(f"map_limit_logs must be a positive integer, got {value!r}")
+    return f"--limit-logs {limit}"
 
 
 @dataclass(frozen=True)
@@ -170,10 +189,11 @@ def pipeline_steps() -> List[Step]:
             "extract_map_features", ["build", "check"],
             '--ego "$PROC_ROOT/features/scenario_ego_agent.parquet" '
             '--mini-ego "$PROC_ROOT/features/scenario_ego_agent_mini_68.parquet" '
+            '--alignment "$PROC_ROOT/features/scenario_ego_agent_alignment.parquet" '
             '--eligibility "$PROC_ROOT/scenario_eligibility.parquet" '
             '--db-dir "$DATA_ROOT/nuplan-v1.1/trainval" --mini-zip "$MINI_ZIP" '
             '--maps-dir "$DATA_ROOT/maps" --out-dir "$PROC_ROOT/features" '
-            '--scratch "$SCRATCH" --report-dir "$REPORT_ROOT/map_features"'),
+            '--scratch "$SCRATCH" --report-dir "$REPORT_ROOT/map_features" $MAP_LIMIT_FLAGS'),
             upstream=("ego_agent_features",)),
         # Join ego/weather/map into scenario_features.parquet + leakage check (298-40).
         Step("integrate_features", tool_command(

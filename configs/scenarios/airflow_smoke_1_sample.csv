@@ -1,0 +1,2 @@
+scenario_id,log_name,db_file,scenario_token,anchor_timestamp_us,scenario_type,all_scenario_tags,map_name,source_recording,window_start_us,window_end_us
+2021.08.17.17.55.18_veh-43_00358_00673:ba9e5e0959d35e7e,2021.08.17.17.55.18_veh-43_00358_00673,2021.08.17.17.55.18_veh-43_00358_00673.db,ba9e5e0959d35e7e,1629223373500061,behind_long_vehicle,behind_long_vehicle|near_long_vehicle|stationary,us-pa-pittsburgh-hazelwood,2021.08.17.17.55.18_veh-43,1629223370500061,1629223385500061

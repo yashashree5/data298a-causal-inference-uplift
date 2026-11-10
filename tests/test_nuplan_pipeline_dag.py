@@ -51,6 +51,7 @@ SAMPLE_ENV = {
     "ARTIFACT_ROOT": "/opt/repo/artifacts/additional_planners",
     "PLANNER_SAMPLE": "configs/scenarios/pittsburgh_65_sample.csv", "DATASET_SPLIT": "train_pittsburgh",
     "EXPERIMENT": "airflow_smoke", "PLANNER_LIMIT_FLAGS": "--limit 1",
+    "MAP_LIMIT_FLAGS": "--limit-logs 1",
     "HOST_REPO_DIR": "/host/repo", "HOST_DATA_ROOT": "/host/data",
     "HOST_ARTIFACT_ROOT": "/host/artifacts", "HOST_CHECKPOINT_ROOT": "/host/checkpoints",
 }
@@ -204,6 +205,14 @@ class RunOptionTest(unittest.TestCase):
             with self.subTest(limit=bad), self.assertRaises(ValueError):
                 spec.planner_limit_flags({"planner_limit": bad})
 
+    def test_map_limit_flags(self):
+        self.assertEqual("", spec.map_limit_flags({}))
+        self.assertEqual("--limit-logs 1", spec.map_limit_flags({"planner_limit": 1}))
+        self.assertEqual("--limit-logs 3", spec.map_limit_flags({"map_limit_logs": 3, "planner_limit": 1}))
+        for bad in (0, -1, "1; rm -rf /"):
+            with self.subTest(limit=bad), self.assertRaises(ValueError):
+                spec.map_limit_flags({"map_limit_logs": bad})
+
 
 class _Values:
     """Stand-in for Airflow's `var.value`: attribute access fails on a missing Variable."""
@@ -233,7 +242,8 @@ class TemplateTest(unittest.TestCase):
         env = jinja2.Environment(undefined=jinja2.StrictUndefined)
         context = {"var": {"value": _Values(variables)}, "dag_run": {"conf": conf},
                    "ts_nodash": "20261106T120000", "city_flags": spec.city_flags,
-                   "planner_limit_flags": spec.planner_limit_flags}
+                   "planner_limit_flags": spec.planner_limit_flags,
+                   "map_limit_flags": spec.map_limit_flags}
         return {key: env.from_string(template).render(context)
                 for key, template in {**spec.DATA_ENV, **spec.PLANNER_ENV}.items()}
 
