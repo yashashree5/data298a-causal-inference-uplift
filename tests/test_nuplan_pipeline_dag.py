@@ -24,9 +24,12 @@ sys.path.insert(0, str(DAGS))
 
 import pipeline_spec as spec  # noqa: E402
 
-DATA_TASKS = ("extract_logs", "scenario_catalog", "eligibility", "ego_agent_features", "weather_features")
+DATA_TASKS = (
+    "extract_logs", "scenario_catalog", "eligibility", "ego_agent_features", "weather_features",
+    "map_features", "integrate_features", "build_labels",
+)
 PLANNER_TASKS = tuple(spec.planner_task_id(p) for p in spec.PLANNERS)
-DEFERRED_TASKS = ("map_features", "integrate_features", "build_labels", "model_dataset", "publish_drive")
+DEFERRED_TASKS = ("model_dataset", "publish_drive")
 EXPECTED_UPSTREAM = {
     "extract_logs": set(),
     "scenario_catalog": set(),
@@ -45,6 +48,7 @@ SAMPLE_ENV = {
     "DATA_ROOT": "/data", "PROC_ROOT": "/processed", "ZIPS_DIR": "/zips", "SCRATCH": "/scratch",
     "MINI_ZIP": "/zips/nuplan-v1.1_mini.zip", "REPORT_ROOT": "/processed/reports",
     "CITY_FLAGS": "--city pittsburgh", "MANIFEST": "configs/scenarios/city4_ranked_top5.csv",
+    "ARTIFACT_ROOT": "/opt/repo/artifacts/additional_planners",
     "PLANNER_SAMPLE": "configs/scenarios/pittsburgh_65_sample.csv", "DATASET_SPLIT": "train_pittsburgh",
     "EXPERIMENT": "airflow_smoke", "PLANNER_LIMIT_FLAGS": "--limit 1",
     "HOST_REPO_DIR": "/host/repo", "HOST_DATA_ROOT": "/host/data",

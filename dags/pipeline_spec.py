@@ -5,8 +5,8 @@ on any machine. ``nuplan_pipeline.py`` turns every ``Step`` into an Airflow task
 
 Every enabled data step runs its tool's ``build`` and then its ``check``; the shell
 ``&&`` makes a failed build or check exit non-zero, which fails the task and blocks
-everything downstream. Steps whose tools are not on ``main`` yet are deferred: they
-exit with ``SKIP_EXIT_CODE`` and show up as *skipped*, never as a fake success.
+everything downstream. Steps whose tools are not ready yet are deferred: they exit with
+``SKIP_EXIT_CODE`` and show up as *skipped*, never as a fake success.
 
 Commands read their paths from environment variables. ``DATA_ENV`` and
 ``PLANNER_ENV`` map each variable to the Jinja template the DAG renders from Airflow
@@ -41,15 +41,21 @@ DATA_ENV = {
     "CITY_FLAGS": "{{ city_flags(dag_run.conf, var.value.get('CITIES', '')) }}",
     "MANIFEST": "{{ dag_run.conf.get('manifest') or var.value.get('MANIFEST', "
                 "'configs/scenarios/city4_ranked_top5.csv') }}",
+    # Same defaults as PLANNER_ENV so build_labels can read planner artifacts without the
+    # simulation pool. ARTIFACT_ROOT is the in-container view of HOST_ARTIFACT_ROOT.
+    "ARTIFACT_ROOT": "{{ var.value.get('ARTIFACT_ROOT', "
+                     "'/opt/repo/artifacts/additional_planners') }}",
+    "PLANNER_SAMPLE": "{{ dag_run.conf.get('sample') or var.value.get('PLANNER_SAMPLE', "
+                      "'configs/scenarios/pittsburgh_65_sample.csv') }}",
+    "EXPERIMENT": "{{ dag_run.conf.get('experiment') or 'airflow_' ~ ts_nodash }}",
 }
 # The planner container is started by the host's Docker daemon, so HOST_* are host paths.
 PLANNER_ENV = {
-    "PLANNER_SAMPLE": "{{ dag_run.conf.get('sample') or var.value.get('PLANNER_SAMPLE', "
-                      "'configs/scenarios/pittsburgh_65_sample.csv') }}",
+    "PLANNER_SAMPLE": DATA_ENV["PLANNER_SAMPLE"],
     "DATASET_SPLIT": "{{ dag_run.conf.get('dataset_split') or var.value.get('DATASET_SPLIT', "
                      "'train_pittsburgh') }}",
     # The runner refuses to overwrite an experiment folder, so every run gets a fresh name.
-    "EXPERIMENT": "{{ dag_run.conf.get('experiment') or 'airflow_' ~ ts_nodash }}",
+    "EXPERIMENT": DATA_ENV["EXPERIMENT"],
     "PLANNER_LIMIT_FLAGS": "{{ planner_limit_flags(dag_run.conf) }}",
     "HOST_REPO_DIR": "{{ var.value.HOST_REPO_DIR }}",
     "HOST_DATA_ROOT": "{{ var.value.HOST_DATA_ROOT }}",
@@ -159,11 +165,28 @@ def pipeline_steps() -> List[Step]:
             "extract_weather_features", ["fetch", "build", "check"],
             f'{processed} --report-dir "$REPORT_ROOT/weather"'),
             upstream=("eligibility",), retries=WEATHER_RETRIES),
-        deferred("map_features", ("ego_agent_features",),
-                 "tools.extract_map_features is unfinished on main (branch 298-39-map-features)"),
-        deferred("integrate_features", ("ego_agent_features", "weather_features", "map_features"),
-                 "tools/build_scenario_features.py and its leakage check are not on main yet "
-                 "(branch 298-40-feature-integration)"),
+        # Map geometry + traffic lights at the ego start pose (298-39).
+        Step("map_features", tool_command(
+            "extract_map_features", ["build", "check"],
+            '--ego "$PROC_ROOT/features/scenario_ego_agent.parquet" '
+            '--mini-ego "$PROC_ROOT/features/scenario_ego_agent_mini_68.parquet" '
+            '--eligibility "$PROC_ROOT/scenario_eligibility.parquet" '
+            '--db-dir "$DATA_ROOT/nuplan-v1.1/trainval" --mini-zip "$MINI_ZIP" '
+            '--maps-dir "$DATA_ROOT/maps" --out-dir "$PROC_ROOT/features" '
+            '--scratch "$SCRATCH" --report-dir "$REPORT_ROOT/map_features"'),
+            upstream=("ego_agent_features",)),
+        # Join ego/weather/map into scenario_features.parquet + leakage check (298-40).
+        Step("integrate_features", tool_command(
+            "build_scenario_features", ["build", "check"],
+            '--ego "$PROC_ROOT/features/scenario_ego_agent.parquet" '
+            '--ego-mini "$PROC_ROOT/features/scenario_ego_agent_mini_68.parquet" '
+            '--weather "$PROC_ROOT/weather/scenario_weather.parquet" '
+            '--weather-mini "$PROC_ROOT/weather/scenario_weather_mini_68.parquet" '
+            '--map "$PROC_ROOT/features/scenario_map.parquet" '
+            '--map-mini "$PROC_ROOT/features/scenario_map_mini_68.parquet" '
+            '--eligibility "$PROC_ROOT/scenario_eligibility.parquet" '
+            '--out-dir "$PROC_ROOT" --report-dir "$REPORT_ROOT/scenario_features"'),
+            upstream=("ego_agent_features", "weather_features", "map_features")),
         Step("freeze_manifest",
              f'{PYTHON} -m tools.freeze_manifest check --manifest "$MANIFEST" '
              '--eligibility "$PROC_ROOT/scenario_eligibility.parquet"',
@@ -174,9 +197,18 @@ def pipeline_steps() -> List[Step]:
              retries=PLANNER_RETRIES, pool=SIMULATION_POOL)
         for p in PLANNERS
     ]
+    label_flags = (
+        '--output-root "$ARTIFACT_ROOT" --experiment "$EXPERIMENT" '
+        '--sample "$PLANNER_SAMPLE" --features "$PROC_ROOT/scenario_features.parquet" '
+        '--out-dir "$PROC_ROOT/labels/$EXPERIMENT" --report-dir "$REPORT_ROOT/labels"'
+    )
     steps += [
-        deferred("build_labels", tuple(planner_task_id(p) for p in PLANNERS),
-                 "planner outcome labels (score difference vs IDM) are tracked in 298-51"),
+        # Score difference vs IDM from finished planner runs (298-51). --overwrite so Airflow
+        # retries and re-triggers can replace the previous experiment's tables.
+        Step("build_labels",
+             f"{PYTHON} -m tools.build_planner_labels build {label_flags} --overwrite && "
+             f"{PYTHON} -m tools.build_planner_labels check {label_flags}",
+             upstream=tuple(planner_task_id(p) for p in PLANNERS)),
         deferred("model_dataset", ("integrate_features", "build_labels"),
                  "the model dataset join (features + labels + split) is not written yet"),
         deferred("publish_drive", ("model_dataset",),
