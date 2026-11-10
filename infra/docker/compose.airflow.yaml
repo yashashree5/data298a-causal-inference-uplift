@@ -28,6 +28,8 @@ x-airflow: &airflow
     AIRFLOW_VAR_HOST_DATA_ROOT: ${AIRFLOW_DOCKER_DATA_ROOT:?Set AIRFLOW_DOCKER_DATA_ROOT in .env}
     AIRFLOW_VAR_HOST_ARTIFACT_ROOT: ${AIRFLOW_DOCKER_ARTIFACT_ROOT:-${AIRFLOW_DOCKER_REPO_DIR}/artifacts/additional_planners}
     AIRFLOW_VAR_HOST_CHECKPOINT_ROOT: ${AIRFLOW_DOCKER_CHECKPOINT_ROOT:-${AIRFLOW_DOCKER_REPO_DIR}/checkpoints}
+    # Writable view of planner artifacts (repo bind above is read-only).
+    AIRFLOW_VAR_ARTIFACT_ROOT: /artifacts
   volumes:
     - type: bind
       source: .
@@ -47,6 +49,10 @@ x-airflow: &airflow
     - type: bind
       source: ${NUPLAN_HOST_SCRATCH:?Set NUPLAN_HOST_SCRATCH in .env}
       target: /scratch
+    - type: bind
+      # Same folder planners write to (see AIRFLOW_DOCKER_ARTIFACT_ROOT / HOST_ARTIFACT_ROOT).
+      source: ./artifacts/additional_planners
+      target: /artifacts
     - type: bind
       source: /var/run/docker.sock
       target: /var/run/docker.sock

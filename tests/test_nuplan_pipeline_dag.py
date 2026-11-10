@@ -48,7 +48,7 @@ SAMPLE_ENV = {
     "DATA_ROOT": "/data", "PROC_ROOT": "/processed", "ZIPS_DIR": "/zips", "SCRATCH": "/scratch",
     "MINI_ZIP": "/zips/nuplan-v1.1_mini.zip", "REPORT_ROOT": "/processed/reports",
     "CITY_FLAGS": "--city pittsburgh", "MANIFEST": "configs/scenarios/city4_ranked_top5.csv",
-    "ARTIFACT_ROOT": "/opt/repo/artifacts/additional_planners",
+    "ARTIFACT_ROOT": "/artifacts",
     "PLANNER_SAMPLE": "configs/scenarios/pittsburgh_65_sample.csv", "DATASET_SPLIT": "train_pittsburgh",
     "EXPERIMENT": "airflow_smoke", "PLANNER_LIMIT_FLAGS": "--limit 1",
     "MAP_LIMIT_FLAGS": "--limit-logs 1",

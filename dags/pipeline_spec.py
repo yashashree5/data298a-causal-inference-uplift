@@ -42,9 +42,8 @@ DATA_ENV = {
     "MANIFEST": "{{ dag_run.conf.get('manifest') or var.value.get('MANIFEST', "
                 "'configs/scenarios/city4_ranked_top5.csv') }}",
     # Same defaults as PLANNER_ENV so build_labels can read planner artifacts without the
-    # simulation pool. ARTIFACT_ROOT is the in-container view of HOST_ARTIFACT_ROOT.
-    "ARTIFACT_ROOT": "{{ var.value.get('ARTIFACT_ROOT', "
-                     "'/opt/repo/artifacts/additional_planners') }}",
+    # simulation pool. Must be a writable mount (repo /opt/repo is read-only in Compose).
+    "ARTIFACT_ROOT": "{{ var.value.get('ARTIFACT_ROOT', '/artifacts') }}",
     "PLANNER_SAMPLE": "{{ dag_run.conf.get('sample') or var.value.get('PLANNER_SAMPLE', "
                       "'configs/scenarios/pittsburgh_65_sample.csv') }}",
     "EXPERIMENT": "{{ dag_run.conf.get('experiment') or 'airflow_' ~ ts_nodash }}",
@@ -193,6 +192,7 @@ def pipeline_steps() -> List[Step]:
             '--eligibility "$PROC_ROOT/scenario_eligibility.parquet" '
             '--db-dir "$DATA_ROOT/nuplan-v1.1/trainval" --mini-zip "$MINI_ZIP" '
             '--maps-dir "$DATA_ROOT/maps" --out-dir "$PROC_ROOT/features" '
+            '--reference-dir "$PROC_ROOT/map_reference" '
             '--scratch "$SCRATCH" --report-dir "$REPORT_ROOT/map_features" $MAP_LIMIT_FLAGS'),
             upstream=("ego_agent_features",)),
         # Join ego/weather/map into scenario_features.parquet + leakage check (298-40).
