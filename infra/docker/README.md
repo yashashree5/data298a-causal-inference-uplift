@@ -5,6 +5,8 @@
 - `Dockerfile.pdm` / `compose.pdm.yaml`: PDM-Closed and a matched IDM baseline,
   both using nuPlan 1.2.2. This image builds on the original CPU image and adds
   the pinned tuPlan Garage checkout and its extra dependencies.
+- `Dockerfile.airflow` / `compose.airflow.yaml`: local Airflow 2.10 for the
+  `nuplan_pipeline` DAG; see [dags/README.md](../../dags/README.md).
 
 Run Make targets from the repository root, with dataset paths set in `.env`
 as described in the main README. Docker mounts the dataset read-only. The

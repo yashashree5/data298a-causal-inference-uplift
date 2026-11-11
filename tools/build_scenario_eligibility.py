@@ -317,6 +317,7 @@ def check(args) -> int:
     cities = load_log_cities(args.data_root)
     shard_root = args.processed / "eligibility"
     results, problems = {}, []
+    # Validate every extracted log has a shard...
     present = {p.stem: p for city in set(cities.values()) for p in (shard_root / city).glob("*.parquet")}
     missing = sorted(set(cities) - set(present))
     results[f"one shard per extracted log ({len(cities):,})"] = not missing
@@ -324,14 +325,22 @@ def check(args) -> int:
         problems.append(f"{len(missing)} logs without a shard, e.g. {missing[0]}")
     failures = json.loads((shard_root / "failures.json").read_text()) if (shard_root / "failures.json").exists() else []
     results["no failed logs in failures.json"] = not failures
-    df = pd.concat([pd.read_parquet(present[name]) for name in sorted(set(cities) & set(present))], ignore_index=True)
+    # ...but build the combined table from EVERY shard on disk. A city-scoped smoke
+    # extract only lists Pittsburgh in trainval_extraction.json; rewriting the
+    # combined parquet from that subset would wipe Boston/Vegas/Singapore.
+    all_shards = sorted(shard_root.glob("*/*.parquet"))
+    if not all_shards:
+        print("No eligibility shards found.")
+        return 1
+    df = pd.concat([pd.read_parquet(p) for p in all_shards], ignore_index=True)
+    extracted = df[df["log_name"].isin(cities)] if cities else df
 
     results["scenario_id unique"] = bool(df["scenario_id"].is_unique)
     key_nulls = {c: int(df[c].isna().sum()) for c in COLUMNS if c != "benchmark_scenario_type"}
     results["no nulls outside benchmark_scenario_type"] = not any(key_nulls.values())
-    # Cross-check against the independent catalog: tag rows per log must match its shard row count.
+    # Cross-check extracted logs against the independent catalog.
     catalog_dir = args.processed / "catalog"
-    tag_rows = df.groupby("log_name")["tag_rows"].sum()
+    tag_rows = extracted.groupby("log_name")["tag_rows"].sum()
     mismatched = []
     for log_name, city in cities.items():
         shard = catalog_dir / city / f"{log_name}.parquet"

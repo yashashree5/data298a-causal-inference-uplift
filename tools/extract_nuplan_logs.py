@@ -156,8 +156,10 @@ def check(args) -> int:
         "complete": not problems,
         "logs": logs,
     }
-    if not args.city:
-        (out_dir.parent / "trainval_extraction.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    # Always write provenance, including city-scoped checks (Airflow smoke uses --city).
+    # When --city is set, the file lists only that city's logs so downstream tools match
+    # what was actually extracted.
+    (out_dir.parent / "trainval_extraction.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps({k: v for k, v in summary.items() if k != "logs"}, indent=2))
     print(f"Status: {'COMPLETE' if not problems else 'INCOMPLETE'}")
     return 0 if not problems else 1
