@@ -184,58 +184,19 @@ scenario; the 136 rows form 68 matched pairs.
   [tests](tests/README.md) document reproduction and validation;
   the [Airflow DAG](dags/README.md) chains the tools into one pipeline.
 
-### Host development setup
-
-Use Python 3.11 for the shared host environment used by CI, data tools,
-classical models, and tests. From a fresh clone's repository root, create a
-virtual environment and install the root [requirements.txt](requirements.txt):
-
-Linux or macOS (bash/zsh):
-
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-Windows (PowerShell):
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements.txt
-```
-
-In later examples, `python` means this virtual environment's interpreter. On
-Windows, use `.\.venv\Scripts\python` if the environment is not activated.
-The manifest includes the editable project with its modeling extra. The base
-package keeps its dependency-free installation for lightweight standard-library
-commands; the combined host environment has the Python 3.11 baseline above.
-
-The requirements include the plotting libraries used by the committed notebooks.
-If you need a notebook interface, install JupyterLab separately with
-`python -m pip install jupyterlab`. Dependency ranges allow compatible updates;
-retain each experiment's recorded package versions when reproducing its results.
-
-Planner simulations use the separate pinned [Docker environments](infra/docker/README.md).
-The root requirements do not install nuPlan, Airflow, PyTorch/CUDA, or raw data.
-Follow the [Airflow setup](dags/README.md) or [GPU workstation setup](docs/local_gpu_setup.md)
-for those environments; installing host requirements does not replace them.
-
 Teammates can inspect the committed sample and results without downloading
-nuPlan or rerunning simulations:
+nuPlan or rerunning simulations. From the repository root, the fast validation
+suite is:
 
 ```bash
-python -m tools.validate_scenario_subset
-python -m tools.pdm_mini_reproducer --dry-run
-python -m tools.pdm_mini_reproducer --planner idm --dry-run
+make check
+python3 -m tools.pdm_mini_reproducer --dry-run
+python3 -m tools.pdm_mini_reproducer --planner idm --dry-run
 ```
 
-These commands validate the committed manifest and print simulation commands;
-they do not execute simulations or reproduce scores. For code checks, `make check`
-runs the unittest subset and two JSON checks; CI uses the broader pytest suite
-with two known map-test exclusions. See the [test guide](tests/README.md) for the
-exact commands, exclusions, and macOS temporary-path workaround. Full simulation
-rerun instructions are in the [tools documentation](tools/README.md).
+These commands validate the code and manifest and print the simulation commands;
+they do not reproduce the scores. Full rerun instructions are in the
+[tools documentation](tools/README.md).
 
 ---
 
@@ -609,7 +570,6 @@ Responsibilities may evolve as the technical design is finalized, while individu
 ├── README.md
 ├── Makefile
 ├── pyproject.toml              # Optional editable package installation
-├── requirements.txt           # Shared Python 3.11 host development environment
 ├── artifacts/
 │   ├── mini_68/               # Committed matched outcome snapshot
 │   └── pittsburgh_v1/         # Planning README only; no results yet
@@ -640,9 +600,8 @@ Responsibilities may evolve as the technical design is finalized, while individu
 Raw nuPlan data, complete simulation outputs, local environment files, and
 upstream repositories remain excluded from Git.
 
-Lightweight standard-library commands and `tools.*` imports still work without
-installing the package or rebuilding Docker. Data, modeling, and test workflows
-use the host dependencies above. Reusable planner implementation now lives in
+Existing Makefile commands and `tools.*` imports still work without installing
+the package or rebuilding Docker. Reusable planner implementation now lives in
 `src/`; the planner tools delegate to it. The merged data and feature tools remain
 in `tools/`. See [repository structure and migration](docs/repository_structure.md)
 for the file mapping and optional editable installation.

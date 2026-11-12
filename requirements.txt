@@ -1,9 +1,12 @@
-# Shared Python 3.11 host environment: data tools, notebooks, modeling and tests.
-# Install from the repository root: python -m pip install -r requirements.txt
+# Optional Python 3.11 host environment: data tools, notebooks, modeling and tests.
+# Create and use a fresh virtual environment before installing from the repo root:
+# python -m pip install -r requirements.txt
 # nuPlan simulation, Airflow and GPU dependencies remain in their own environments.
 
 # Keep the package's modeling dependency declarations in pyproject.toml.
 -e .[modeling]
+# Limit the modeling major version only when opting into this environment.
+scikit-learn<2
 
 numpy>=1.26.4,<3
 pandas>=2.2.3,<4

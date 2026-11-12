@@ -7,14 +7,13 @@ name = "data298a-causal-planner"
 version = "0.1.0"
 description = "Reproducible matched nuPlan planner experiments"
 requires-python = ">=3.9"
-# Planner dry runs and manifest loading can use the standard library.
-# Install requirements.txt for the shared Python 3.11 data/model/test environment.
-# Simulation dependencies remain pinned separately in infra/docker/.
+# Fast validation and CLI help use the standard library.
+# Simulation and outcome dependencies remain pinned in infra/docker/.
 dependencies = []
 
 [project.optional-dependencies]
-# Included by requirements.txt; standalone install: python -m pip install -e '.[modeling]'.
-modeling = ["scikit-learn>=1.5,<2"]
+# For tools/train_baseline.py; install with `pip install -e .[modeling]`.
+modeling = ["scikit-learn>=1.5"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

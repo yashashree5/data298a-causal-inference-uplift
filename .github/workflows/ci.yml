@@ -32,19 +32,17 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install pandas numpy pyarrow pytest pyyaml duckdb pyproj shapely requests jinja2
+          python -m pip install -e .
 
       - name: Unit tests
         run: |
-          # Retain the existing map-test exclusions (Linear 298-39 / PR #30).
-          # Re-enable them after checking both supported CI platforms.
+          # Two map-feature tests still fail on main (Linear 298-39 / PR #30 WIP).
+          # Deselect them so CI stays green; remove these lines when that work is finished.
           python -m pytest -q \
             --deselect tests/test_extract_map_features.py::AssemblyPropertyTests::test_missing_indicators_and_row_coverage \
             --deselect tests/test_extract_map_features.py::BuildCliTests::test_end_to_end_build
