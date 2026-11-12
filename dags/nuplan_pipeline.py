@@ -16,8 +16,8 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 
 from pipeline_spec import (
-    DAG_ID, DATA_ENV, PLANNER_ENV, SKIP_EXIT_CODE, Step, city_flags, pipeline_steps,
-    planner_limit_flags,
+    DAG_ID, DATA_ENV, PLANNER_ENV, SKIP_EXIT_CODE, Step, city_flags, map_limit_flags,
+    pipeline_steps, planner_limit_flags,
 )
 
 # Repository path inside the Airflow containers (infra/docker/compose.airflow.yaml).
@@ -39,7 +39,11 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     default_args={"retries": 0},
-    user_defined_macros={"city_flags": city_flags, "planner_limit_flags": planner_limit_flags},
+    user_defined_macros={
+        "city_flags": city_flags,
+        "planner_limit_flags": planner_limit_flags,
+        "map_limit_flags": map_limit_flags,
+    },
     tags=["nuplan", "team4"],
 ) as dag:
     steps = pipeline_steps()

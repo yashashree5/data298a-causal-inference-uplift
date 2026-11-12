@@ -791,16 +791,333 @@ def build(args) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------------------- check --
+
+ALLOWED_VALUES = {"lane_type": set(LANE_TYPES), "traffic_light_state": set(TL_STATES),
+                  "in_intersection": {True, False}}
+ON_MAP_TYPES = ("lane", "lane_connector")
+CHECK_AUDIT_COLUMNS = ["subset", "scenario_id", "map_name"]
+ADDED_DEPENDENCIES = ("shapely", "pyproj")
+REPORT_STEM = "map_features"
+
+
+def _null_to_none(value):
+    """`value`, or None for any scalar null (None, NaN, pd.NA)."""
+    if value is None or (not isinstance(value, (list, np.ndarray)) and pd.isna(value)):
+        return None
+    return value
+
+
+def _plain(series: pd.Series) -> list:
+    """Python values of a column, with every null as None."""
+    return [_null_to_none(v) for v in series.astype(object).tolist()]
+
+
+def _value_key(value) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, (bool, np.bool_)):
+        return "True" if bool(value) else "False"
+    return str(value)
+
+
+def value_counts(df: pd.DataFrame) -> dict[str, dict[str, int]]:
+    """Per feature, counts of each value with nulls under 'null' (sorted keys for stable reports)."""
+    out = {}
+    for f in FEATURES:
+        counts: dict[str, int] = {}
+        for v in _plain(df[f]):
+            k = _value_key(v)
+            counts[k] = counts.get(k, 0) + 1
+        out[f] = dict(sorted(counts.items()))
+    return out
+
+
+def allowed_values_ok(df: pd.DataFrame) -> bool:
+    for f, allowed in ALLOWED_VALUES.items():
+        for v in _plain(df[f]):
+            if v is None:
+                continue
+            if f == "in_intersection":
+                if not isinstance(v, (bool, np.bool_)):
+                    return False
+            elif v not in allowed:
+                return False
+    return True
+
+
+def missing_flags_ok(df: pd.DataFrame) -> bool:
+    for f in FEATURES:
+        flag = df[f"{f}_missing"]
+        if flag.isna().any():
+            return False
+        if not np.array_equal(flag.to_numpy(dtype=bool), df[f].isna().to_numpy(dtype=bool)):
+            return False
+    return True
+
+
+def city_shares(cand: pd.DataFrame, audit: pd.DataFrame) -> dict[str, dict]:
+    """Per map_name: Candidate count, on-lane/connector share and feature value counts.
+
+    `cand` is the Candidate Map_Table; the city comes from the Audit_Table rows of that subset.
+    Candidates with a null map_name are not attributed to any city.
+    """
+    cities = audit.loc[audit["subset"] == SUBSET_CANDIDATES, ["scenario_id", "map_name"]]
+    joined = cand.merge(cities, on="scenario_id", how="left")
+    out: dict[str, dict] = {}
+    for name, g in joined.dropna(subset=["map_name"]).groupby("map_name", sort=True):
+        on_map = int(g["lane_type"].isin(ON_MAP_TYPES).fillna(False).sum())
+        out[str(name)] = {"scenarios": int(len(g)), "on_lane_or_connector": on_map,
+                          "on_lane_or_connector_share": on_map / len(g) if len(g) else 0.0,
+                          "values": value_counts(g)}
+    return out
+
+
+def input_scenario_ids(args) -> tuple[pd.Series, pd.Series]:
+    """Candidate and Mini_Scenario ids from the ego tables, with --limit-logs applied as in build."""
+    ego = pd.read_parquet(Path(args.ego), columns=["scenario_id", "log_name"])
+    if getattr(args, "limit_logs", None):
+        keep = sorted(ego["log_name"].dropna().unique())[: int(args.limit_logs)]
+        ego = ego[ego["log_name"].isin(keep)]
+    mini = pd.read_parquet(Path(args.mini_ego), columns=["scenario_id"])
+    return ego["scenario_id"].astype(str), mini["scenario_id"].astype(str)
+
+
+def report_paths(args) -> dict[str, Path]:
+    suffix = "_smoke" if getattr(args, "limit_logs", None) else ""
+    rd = Path(args.report_dir)
+    return {"md": rd / f"{REPORT_STEM}{suffix}.md", "json": rd / f"{REPORT_STEM}{suffix}.json"}
+
+
+def _build_provenance(path: Path) -> dict:
+    import pyarrow.parquet as pq
+
+    raw = (pq.read_schema(path).metadata or {}).get(PROVENANCE_KEY)
+    if not raw:
+        return {}
+    prov = json.loads(raw)
+    return {"feature_version": prov.get("feature_version"), "created_utc": prov.get("created_utc"),
+            "maps": prov.get("maps", {}), "map_errors": prov.get("map_errors", {}),
+            "status_error_count": len(prov.get("status_errors", {})), "libraries": prov.get("libraries", {})}
+
+
+def _dependencies() -> dict[str, str]:
+    import importlib
+
+    deps = {}
+    for name in ADDED_DEPENDENCIES:
+        try:
+            deps[name] = str(importlib.import_module(name).__version__)
+        except Exception:  # noqa: BLE001 - the report still lists the dependency
+            deps[name] = "not installed"
+    return deps
+
+
 def check(args) -> int:
-    """Placeholder: implemented in task 5.1 of the map-features spec."""
-    print("check is not implemented yet (map-features task 5.1)")
-    return 1
+    """Validate the build outputs, print PASS/FAIL lines, write the md + JSON report; 0 iff all pass."""
+    paths = output_paths(args)
+    needed = {"ego": Path(args.ego), "mini_ego": Path(args.mini_ego),
+              "map": paths["map"], "mini": paths["mini"], "audit": paths["audit"]}
+    missing = [f"missing input: {p}" for p in needed.values() if not p.exists()]
+    if missing:
+        for msg in missing:
+            print(msg)
+        return 2
+    errors = (require_columns(needed["ego"], ["scenario_id", "log_name"])
+              + require_columns(needed["mini_ego"], ["scenario_id"])
+              + require_columns(needed["map"], MAP_COLUMNS) + require_columns(needed["mini"], MAP_COLUMNS)
+              + require_columns(needed["audit"], CHECK_AUDIT_COLUMNS))
+    if errors:
+        for msg in errors:
+            print(msg)
+        return 2
+
+    cand_ids, mini_ids = input_scenario_ids(args)
+    cand = pd.read_parquet(paths["map"])
+    mini = pd.read_parquet(paths["mini"])
+    audit = pd.read_parquet(paths["audit"], columns=CHECK_AUDIT_COLUMNS)
+    tables = {SUBSET_CANDIDATES: cand, SUBSET_MINI: mini}
+    inputs = {SUBSET_CANDIDATES: cand_ids, SUBSET_MINI: mini_ids}
+    threshold = float(args.frame_threshold)
+
+    results: dict[str, bool] = {}
+    for subset, df in tables.items():
+        ids = df["scenario_id"].astype(str)
+        results[f"{subset}: one row per input scenario ({len(df):,} rows, {len(inputs[subset]):,} inputs)"] = bool(
+            len(df) == len(inputs[subset]) and set(ids) == set(inputs[subset]))
+    results["scenario_id unique in both Map_Tables and in the Audit_Table per subset"] = bool(
+        cand["scenario_id"].is_unique and mini["scenario_id"].is_unique
+        and not audit.duplicated(["subset", "scenario_id"]).any())
+    results["feature columns contain only allowed values or null"] = all(
+        allowed_values_ok(df) for df in tables.values())
+    results["*_missing equals the null mask of its feature"] = all(missing_flags_ok(df) for df in tables.values())
+    audit_pairs = set(zip(audit["subset"].astype(str), audit["scenario_id"].astype(str)))
+    table_pairs = {(s, str(i)) for s, df in tables.items() for i in df["scenario_id"]}
+    results["Audit_Table ids equal the union of both Map_Tables"] = bool(
+        audit_pairs == table_pairs and len(audit) == len(table_pairs))
+    shares = city_shares(cand, audit)
+    if not shares:
+        results["frame alignment: no Candidate city found"] = False
+    for name, c in shares.items():
+        share = c["on_lane_or_connector_share"]
+        results[f"frame alignment {name}: share on lane or lane_connector {share:.4f} "
+                f"(threshold {threshold:.2f})"] = bool(share >= threshold)
+    results[f"Map_Table columns are exactly {', '.join(MAP_COLUMNS)}"] = all(
+        list(df.columns) == MAP_COLUMNS for df in tables.values())
+    for name, ok in results.items():
+        print(f"[{'PASS' if ok else 'FAIL'}] {name}")
+
+    summary = {
+        "feature_version": FEATURE_VERSION,
+        "rows": {s: int(len(df)) for s, df in tables.items()},
+        "frame_threshold": threshold,
+        "by_city": shares,
+        "mini_values": value_counts(mini),
+        "missing_counts": {s: {f: int(df[f].isna().sum()) for f in FEATURES} for s, df in tables.items()},
+        "added_dependencies": _dependencies(),
+        "build_provenance": _build_provenance(paths["map"]),
+        "outputs": {k: str(p) for k, p in paths.items()},
+        "checks": {"generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                   "results": results, "complete": all(results.values())},
+    }
+    reports = report_paths(args)
+    reports["md"].parent.mkdir(parents=True, exist_ok=True)
+    reports["json"].write_text(json.dumps(summary, indent=2, default=str) + "\n", encoding="utf-8", newline="\n")
+    reports["md"].write_text(markdown_report(summary), encoding="utf-8", newline="\n")
+    print(f"Wrote {reports['md']} and {reports['json']}. "
+          f"Status: {'COMPLETE' if summary['checks']['complete'] else 'INCOMPLETE'}")
+    return 0 if summary["checks"]["complete"] else 1
+
+
+def markdown_report(s: dict) -> str:
+    prov = s.get("build_provenance") or {}
+    lines = [
+        "# Map features",
+        "",
+        f"Generated by `python -m tools.extract_map_features check` ({s['feature_version']}, "
+        f"{s['checks']['generated_utc']}). Tables stay outside Git in the feature output directory.",
+        "",
+        "## Definitions",
+        "",
+        "All three features are evaluated at the ego rear-axle position of the start lidar frame.",
+        "",
+        "| Column | Definition |",
+        "|---|---|",
+        "| `lane_type` | `lane` if a lane polygon covers ego (a lane wins over a connector), else `lane_connector` "
+        "if a connector polygon does, else `none` |",
+        "| `in_intersection` | ego covered by an intersection polygon (boundary counts as inside) |",
+        "| `traffic_light_state` | most restrictive red > yellow > green status at the start frame among the "
+        "relevant connectors (ego connectors, else connectors leaving the ego lane via `exit_lane_fid`); "
+        "`unknown` if none has a record, `none` if there are no relevant connectors |",
+        "",
+        "Each feature has a `*_missing` flag, True where the value is null (no ego point, map or status data). "
+        "Map ids are kept in `scenario_map_alignment.parquet` and never in the model tables.",
+        "",
+        "Map layers are stored in WGS84 lon/lat and are reprojected per city to the map's "
+        "`projectedCoordSystem` (UTM) before the lookup.",
+        "",
+        f"## By city (benchmark candidates, frame threshold {s['frame_threshold']:.2f})",
+        "",
+        "| City | Map version | CRS | Scenarios | On lane or connector | lane / lane_connector / none / null "
+        "| in_intersection True / False / null | red / yellow / green / unknown / none / null |",
+        "|---|---|---|---:|---:|---|---|---|",
+    ]
+    maps = prov.get("maps", {})
+
+    def _counts(values: dict, keys: tuple) -> str:
+        return " / ".join(f"{int(values.get(k, 0)):,}" for k in keys)
+
+    for name, c in s["by_city"].items():
+        m = maps.get(name, {})
+        v = c["values"]
+        lines.append(
+            f"| {name} | {m.get('version', '')} | {m.get('crs', '')} | {c['scenarios']:,} "
+            f"| {c['on_lane_or_connector_share']:.2%} "
+            f"| {_counts(v['lane_type'], LANE_TYPES + ('null',))} "
+            f"| {_counts(v['in_intersection'], ('True', 'False', 'null'))} "
+            f"| {_counts(v['traffic_light_state'], TL_STATES + ('null',))} |")
+    mv = s["mini_values"]
+    lines += ["", "## Mini scenarios", "",
+              f"{s['rows'][SUBSET_MINI]} rows. lane_type {_counts(mv['lane_type'], LANE_TYPES + ('null',))}; "
+              f"in_intersection {_counts(mv['in_intersection'], ('True', 'False', 'null'))}; "
+              f"traffic_light_state {_counts(mv['traffic_light_state'], TL_STATES + ('null',))} "
+              "(same value order as the city table).",
+              "", "## Missing values", "",
+              "| Table | Rows | " + " | ".join(f"`{f}`" for f in FEATURES) + " |",
+              "|---|---:|" + "---:|" * len(FEATURES)]
+    for subset, counts in s["missing_counts"].items():
+        lines.append(f"| {subset} | {s['rows'][subset]:,} | " + " | ".join(f"{counts[f]:,}" for f in FEATURES) + " |")
+    if prov:
+        lines += ["", f"Build {prov.get('created_utc', '')}: {len(prov.get('map_errors', {}))} unavailable maps, "
+                      f"{prov.get('status_error_count', 0)} logs without status data."]
+    lines += ["", "## Added dependencies", "",
+              "Installed in `.venv` for this tool (GeoPackage layers are read with stdlib `sqlite3`):", ""]
+    lines += [f"- `{name}` {version}" for name, version in s["added_dependencies"].items()]
+    lines += ["", "## Validation", ""]
+    lines += [f"- {'PASS' if ok else 'FAIL'}: {n}" for n, ok in s["checks"]["results"].items()]
+    return "\n".join(lines) + "\n"
+
+
+# ------------------------------------------------------------------------------- verify-mini --
+
+REFERENCE_FILE = "devkit_map_mini_68.parquet"
+
+
+def _comparable(value):
+    if value is None:
+        return None
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
+    return str(value)
+
+
+def compare_mini(ours: pd.DataFrame, reference: pd.DataFrame) -> dict[str, dict]:
+    """Per feature: agreeing count, total and the disagreeing (scenario_id, ours, devkit) triples.
+
+    Scenarios are matched on scenario_id over the union of both tables; a scenario absent from one
+    side disagrees with value '<absent>' on that side.
+    """
+    a = {str(i): r for i, r in zip(ours["scenario_id"], ours[list(FEATURES)].to_dict("records"))}
+    b = {str(i): r for i, r in zip(reference["scenario_id"], reference[list(FEATURES)].to_dict("records"))}
+    ids = sorted(set(a) | set(b))
+    out = {}
+    for f in FEATURES:
+        diffs = []
+        for sid in ids:
+            va = _comparable(_null_to_none(a[sid][f])) if sid in a else "<absent>"
+            vb = _comparable(_null_to_none(b[sid][f])) if sid in b else "<absent>"
+            if va != vb or sid not in a or sid not in b:
+                diffs.append((sid, va, vb))
+        out[f] = {"agree": len(ids) - len(diffs), "total": len(ids), "disagree": diffs}
+    return out
 
 
 def verify_mini(args) -> int:
-    """Placeholder: implemented in task 5.1 of the map-features spec."""
-    print("verify-mini is not implemented yet (map-features task 5.1)")
-    return 1
+    """Compare scenario_map_mini_68 with the Devkit_Reference; exit 0 only on full agreement."""
+    mini_path = output_paths(args)["mini"]
+    ref_path = Path(args.reference) if args.reference else Path(args.reference_dir) / REFERENCE_FILE
+    missing = [f"missing input: {p}" for p in (mini_path, ref_path) if not p.exists()]
+    if missing:
+        for msg in missing:
+            print(msg)
+        return 2
+    errors = require_columns(mini_path, ["scenario_id", *FEATURES]) + require_columns(ref_path, ["scenario_id", *FEATURES])
+    if errors:
+        for msg in errors:
+            print(msg)
+        return 2
+    ours = pd.read_parquet(mini_path, columns=["scenario_id", *FEATURES])
+    ref = pd.read_parquet(ref_path, columns=["scenario_id", *FEATURES])
+    result = compare_mini(ours, ref)
+    ok = True
+    for f, r in result.items():
+        full = r["total"] > 0 and r["agree"] == r["total"]
+        ok = ok and full
+        print(f"[{'PASS' if full else 'FAIL'}] {f}: agree {r['agree']}/{r['total']}")
+        for sid, va, vb in r["disagree"]:
+            print(f"    {sid}: ours={va} devkit={vb}")
+    print(f"verify-mini {'PASSED' if ok else 'FAILED'} ({mini_path} vs {ref_path})")
+    return 0 if ok else 1
 
 
 # --------------------------------------------------------------------------------------- CLI --

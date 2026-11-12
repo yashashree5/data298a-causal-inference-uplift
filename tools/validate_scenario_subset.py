@@ -7,6 +7,7 @@ Usage, from the repository root:
     python3 tools/validate_scenario_subset.py
     python3 -m tools.validate_scenario_subset --json /tmp/subset_report.json
     python3 tools/validate_scenario_subset.py --features path/to/feature_table.csv
+    python3 tools/validate_scenario_subset.py --features path/to/scenario_features.parquet
 
 Exit status: 0 when every required check passes, 1 when any required check fails,
 2 when an input file or PyYAML is missing.
@@ -79,6 +80,20 @@ def read_csv(path):
     with Path(path).open(newline="", encoding="utf-8") as stream:
         reader = csv.DictReader(stream)
         return list(reader.fieldnames or []), list(reader)
+
+
+def read_feature_columns(path):
+    """Column names of a feature table: parquet schema only (no data read), else CSV header."""
+    if str(path).lower().endswith(".parquet"):
+        if not Path(path).is_file():
+            raise InputError(f"Parquet not found: {path}")
+        try:
+            import pyarrow.parquet as pq
+        except ImportError as exc:
+            raise InputError("pyarrow is required to read a parquet feature table") from exc
+        return list(pq.read_schema(path).names)
+    columns, _ = read_csv(path)
+    return columns
 
 
 def resolve(path):
@@ -551,7 +566,7 @@ def validate(schema_path=DEFAULT_SCHEMA, features_path=None, data_root=None):
 
     # Optional feature table.
     if features_path:
-        columns, _ = read_csv(features_path)
+        columns = read_feature_columns(features_path)
         report.add("feature table contains no outcome/treatment columns", check_feature_table_columns(schema, columns),
                    f"{len(columns)} columns in {features_path}")
     else:
@@ -581,7 +596,8 @@ def validate(schema_path=DEFAULT_SCHEMA, features_path=None, data_root=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
-    parser.add_argument("--features", type=Path, help="Optional pre-simulation feature table (CSV) to leakage-check")
+    parser.add_argument("--features", type=Path, help="Optional pre-simulation feature table to leakage-check (.parquet: "
+                             "column names read from the schema only; otherwise CSV header)")
     parser.add_argument("--data-root", help="Optional nuPlan dataset root to measure the selected log databases")
     parser.add_argument("--json", type=Path, help="Also write the checks and facts as JSON")
     args = parser.parse_args(argv)

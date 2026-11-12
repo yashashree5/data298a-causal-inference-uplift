@@ -16,10 +16,10 @@ everything downstream: the checks are the quality gate.
 
 ```text
 extract_logs ─────┐
-                  ├─► eligibility ─┬─► ego_agent_features ─┬─► map_features* ─┐
-scenario_catalog ─┘                │                       └──────────────────┼─► integrate_features* ─┐
-                                   ├─► weather_features ──────────────────────┘                        │
-                                   └─► freeze_manifest ─► planner_<name> x5 ─► build_labels* ──────────┴─► model_dataset* ─► publish_drive*
+                  ├─► eligibility ─┬─► ego_agent_features ─┬─► map_features ─┐
+scenario_catalog ─┘                │                       └────────────────┼─► integrate_features ─┐
+                                   ├─► weather_features ────────────────────┘                      │
+                                   └─► freeze_manifest ─► planner_<name> x5 ─► build_labels ───────┴─► model_dataset* ─► publish_drive*
 ```
 
 | Task | Command (from the repository root) | Retries | Notes |
@@ -29,16 +29,15 @@ scenario_catalog ─┘                │                       └────
 | `eligibility` | `tools.build_scenario_eligibility build && check` | 0 | Skips logs that already have a shard |
 | `ego_agent_features` | `build-mini` (once) `&& build && check` | 0 | `check` needs the mini_68 table |
 | `weather_features` | `tools.extract_weather_features fetch && build && check` | 3 | `fetch` is a no-op when `open_meteo_raw.json` is cached |
+| `map_features` | `tools.extract_map_features build && check` | 0 | lane_type, in_intersection, traffic_light_state |
+| `integrate_features` | `tools.build_scenario_features build && check` | 0 | joins ego/weather/map; leakage check |
 | `freeze_manifest` | `tools.freeze_manifest check --manifest <MANIFEST>` | 0 | Never rebuilds the frozen manifest |
 | `planner_<name>` | `docker compose ... compose.planners.yaml run --rm planner python -m tools.pdm_mini_reproducer` | 1 | Pool `simulation` (5 slots); IDM, PDM-Closed, PDM-Hybrid, UrbanDriver, GC-PGP |
+| `build_labels` | `tools.build_planner_labels build --overwrite && check` | 0 | score difference vs IDM |
 
 \* Deferred: these tasks exit with code 99 and show as **skipped**, never as a
-fake success, until their tools are on `main`:
+fake success, until their tools are ready:
 
-- `map_features`: `tools.extract_map_features` is unfinished (branch `298-39-map-features`).
-- `integrate_features`: `tools/build_scenario_features.py` and its leakage check
-  (branch `298-40-feature-integration`).
-- `build_labels`: score difference vs IDM (Linear 298-51).
 - `model_dataset`: join of features, labels and split.
 - `publish_drive`: `rclone copy --immutable` to the shared Drive.
 
@@ -84,16 +83,18 @@ Trigger with a JSON configuration ("Trigger DAG w/ config", or
 | Key | Default | Meaning |
 |---|---|---|
 | `cities` | Variable `CITIES` (all cities) | List or comma string of `boston`, `las_vegas`, `pittsburgh`, `singapore` |
-| `planner_limit` | whole sample | Run only the first N scenarios per planner |
+| `planner_limit` | whole sample | Run only the first N scenarios per planner; also sets map `--limit-logs N` unless overridden |
+| `map_limit_logs` | same as `planner_limit` | Map smoke: first N trainval logs (`scenario_map_smoke.parquet`) |
 | `experiment` | `airflow_<logical date>` | Planner experiment folder; the runner refuses to overwrite one |
-| `sample` | `configs/scenarios/pittsburgh_65_sample.csv` | Scenario CSV the planners run |
+| `sample` | `configs/scenarios/pittsburgh_65_sample.csv` | Scenario CSV the planners **and** `build_labels` use (must match what was simulated) |
 | `dataset_split` | `train_pittsburgh` | Split folder under `nuplan-v1.1/splits/` |
 | `manifest` | `configs/scenarios/city4_ranked_top5.csv` | Frozen manifest re-validated before simulation |
 
-Smoke run (Pittsburgh, one scenario per planner):
+Smoke run (Pittsburgh, one scenario per planner; sample must match the limited run so labels pass):
 
 ```json
-{"cities": "pittsburgh", "planner_limit": 1, "experiment": "airflow_smoke"}
+{"cities": "pittsburgh", "planner_limit": 1, "experiment": "airflow_smoke",
+ "sample": "configs/scenarios/airflow_smoke_1_sample.csv"}
 ```
 
 Without Docker Compose, set the Airflow Variables `DATA_ROOT`, `PROC_ROOT`,

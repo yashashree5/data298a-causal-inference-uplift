@@ -359,7 +359,7 @@ if shapely is not None:
     import zipfile
     import pyarrow.parquet as pq
     from tools.extract_map_features import (  # noqa: E402
-        MAP_COLUMNS, AUDIT_COLUMNS, SUBSET_CANDIDATES, SUBSET_MINI, assemble_features, audit_table, main,
+        FRAME_COLUMNS, MAP_COLUMNS, AUDIT_COLUMNS, SUBSET_CANDIDATES, SUBSET_MINI, assemble_features, audit_table, main,
         map_table, reference_input, write_parquet,
     )
 
@@ -378,7 +378,7 @@ def synthetic_frame(rng: random.Random, n: int) -> "pd.DataFrame":
             "ego_y": None if null_ego else rng.randint(-2, 52) / 2,
             "start_lidar_token": None if rng.random() < 0.15 else f"{rng.randint(0, 5):016x}",
         })
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows, columns=FRAME_COLUMNS)  # columns kept when n == 0, as in load_frames
     for c in ("subset", "scenario_id", "log_name", "map_name", "map_version", "db_file", "start_lidar_token"):
         df[c] = df[c].astype("string")
     return df
@@ -496,15 +496,18 @@ class BuildCliTests(unittest.TestCase):
                          ["scenario_map.parquet", "scenario_map_alignment.parquet", "scenario_map_mini_68.parquet"])
         cand = pd.read_parquet(out / "scenario_map.parquet").set_index("scenario_id")
         self.assertEqual(list(cand.reset_index().columns), MAP_COLUMNS)
-        self.assertEqual(cand["lane_type"].tolist(), ["lane", "lane_connector", "none", None, "lane"])
-        self.assertEqual(cand["in_intersection"].tolist(), [False, True, False, None, False])
+        def values(col):  # nullable parquet columns read back as pd.NA
+            return [None if pd.isna(v) else v for v in col.tolist()]
+
+        self.assertEqual(values(cand["lane_type"]), ["lane", "lane_connector", "none", None, "lane"])
+        self.assertEqual(values(cand["in_intersection"]), [False, True, False, None, False])
         # logA:1 on lane 7 -> outgoing 55 (green) + 56 (RED) -> red; logA:2 on connector 55 -> green;
         # logA:3 off-map -> none; logA:4 null ego; logB DB missing -> null
-        self.assertEqual(cand["traffic_light_state"].tolist(), ["red", "green", "none", None, None])
+        self.assertEqual(values(cand["traffic_light_state"]), ["red", "green", "none", None, None])
         self.assertEqual(cand["traffic_light_state_missing"].tolist(), [False, False, False, True, True])
         mini = pd.read_parquet(out / "scenario_map_mini_68.parquet")
         self.assertEqual(mini["scenario_id"].tolist(), ["logM:6", "logM:7"])
-        self.assertEqual(mini["traffic_light_state"].tolist(), ["yellow", None])  # logM:7 has an unknown map
+        self.assertEqual(values(mini["traffic_light_state"]), ["yellow", None])  # logM:7 has an unknown map
         self.assertEqual(mini["lane_type_missing"].tolist(), [False, True])
         audit = pd.read_parquet(out / "scenario_map_alignment.parquet")
         self.assertEqual(list(audit.columns), AUDIT_COLUMNS)
@@ -556,12 +559,115 @@ class BuildCliTests(unittest.TestCase):
         self.assertEqual([p.name for p in path.parent.iterdir()], ["t.parquet"])
         self.assertEqual(json.loads(pq.read_schema(path).metadata[b"map_features_provenance"]), {"k": 1})
 
-    def test_check_and_verify_mini_are_registered(self):
-        for cmd in ("check", "verify-mini"):
-            with self.subTest(cmd=cmd):
-                code, log = run_main([cmd])
-                self.assertEqual(code, 1)
-                self.assertIn("not implemented", log)
+    def test_check_after_build_reports_into_report_dir(self):
+        flags = write_inputs(self.root)
+        self.assertEqual(run_main(["build", *flags, "--workers", "1"])[0], 0)
+        # synthetic city share is 3/5 = 0.6 (lane, connector, none, null, lane)
+        code, log = run_main(["check", *flags, "--frame-threshold", "0.5"])
+        self.assertEqual(code, 0, log)
+        self.assertNotIn("[FAIL]", log)
+        self.assertTrue((self.root / "report" / "map_features.md").exists())
+
+
+def map_rows(ids: list[str], lane_types: list) -> "pd.DataFrame":
+    lt = pd.array(lane_types, dtype="string")
+    ii = pd.array([None if v is None else v == "lane_connector" for v in lane_types], dtype="boolean")
+    tl = pd.array([None if v is None else "none" for v in lane_types], dtype="string")
+    return pd.DataFrame({"scenario_id": ids, "lane_type": lt, "lane_type_missing": lt.isna(),
+                         "in_intersection": ii, "in_intersection_missing": ii.isna(),
+                         "traffic_light_state": tl, "traffic_light_state_missing": tl.isna()})
+
+
+@needs_geo
+class CheckCliTests(unittest.TestCase):
+    """Hand-built outputs: city-a 2/2 on a lane or connector, city-b 1/2 (share 0.5)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = root = Path(self.tmp.name)
+        out = root / "out"
+        cand_ids = ["a1", "a2", "b1", "b2"]
+        pd.DataFrame({"scenario_id": cand_ids, "log_name": ["la", "la", "lb", "lb"]}).to_parquet(root / "ego.parquet")
+        pd.DataFrame({"scenario_id": ["m1"]}).to_parquet(root / "mini_ego.parquet")
+        write_parquet(map_rows(cand_ids, ["lane", "lane_connector", "lane", "none"]), out / "scenario_map.parquet", {})
+        write_parquet(map_rows(["m1"], ["lane"]), out / "scenario_map_mini_68.parquet", {})
+        pd.DataFrame({"subset": [SUBSET_CANDIDATES] * 4 + [SUBSET_MINI], "scenario_id": cand_ids + ["m1"],
+                      "map_name": ["city-a", "city-a", "city-b", "city-b", "city-a"]}).to_parquet(
+            out / "scenario_map_alignment.parquet")
+        self.flags = ["--ego", str(root / "ego.parquet"), "--mini-ego", str(root / "mini_ego.parquet"),
+                      "--out-dir", str(out), "--reference-dir", str(root / "ref"),
+                      "--report-dir", str(root / "report")]
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_low_city_share_fails_naming_city_and_share(self):
+        code, log = run_main(["check", *self.flags])
+        self.assertEqual(code, 1, log)
+        fails = [line for line in log.splitlines() if line.startswith("[FAIL]")]
+        self.assertEqual(len(fails), 1, log)
+        self.assertIn("city-b", fails[0])
+        self.assertIn("0.5000", fails[0])
+        self.assertTrue(any(line.startswith("[PASS]") and "city-a" in line for line in log.splitlines()))
+        report = json.loads((self.root / "report" / "map_features.json").read_text(encoding="utf-8"))
+        self.assertEqual(report["by_city"]["city-b"]["values"]["lane_type"], {"lane": 1, "none": 1})
+        self.assertEqual(report["missing_counts"][SUBSET_CANDIDATES]["lane_type"], 0)
+        self.assertEqual(set(report["added_dependencies"]), {"shapely", "pyproj"})
+        self.assertFalse(report["checks"]["complete"])
+        md = (self.root / "report" / "map_features.md").read_text(encoding="utf-8")
+        self.assertIn("city-b", md)
+        self.assertIn("`shapely`", md)
+
+    def test_threshold_flag_and_missing_flag_mismatch(self):
+        code, log = run_main(["check", *self.flags, "--frame-threshold", "0.5"])
+        self.assertEqual(code, 0, log)
+        bad = map_rows(["a1", "a2", "b1", "b2"], ["lane", "lane_connector", "lane", None])
+        bad.loc[3, "lane_type_missing"] = False
+        write_parquet(bad, self.root / "out" / "scenario_map.parquet", {})
+        code, log = run_main(["check", *self.flags, "--frame-threshold", "0.5"])
+        self.assertEqual(code, 1)
+        self.assertIn("[FAIL] *_missing equals the null mask", log)
+
+    def test_missing_output_exits_2(self):
+        (self.root / "out" / "scenario_map.parquet").unlink()
+        code, log = run_main(["check", *self.flags])
+        self.assertEqual(code, 2)
+        self.assertIn("missing input:", log)
+        self.assertFalse((self.root / "report").exists())
+
+
+@needs_geo
+class VerifyMiniTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.ids = ["m1", "m2", "m3"]
+        write_parquet(map_rows(self.ids, ["lane", "lane_connector", "none"]),
+                      self.root / "out" / "scenario_map_mini_68.parquet", {})
+        self.flags = ["--out-dir", str(self.root / "out"), "--reference", str(self.root / "devkit.parquet")]
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def write_reference(self, tl_states: list[str]):
+        pd.DataFrame({"scenario_id": self.ids, "lane_type": ["lane", "lane_connector", "none"],
+                      "in_intersection": [False, True, False],
+                      "traffic_light_state": tl_states}).to_parquet(self.root / "devkit.parquet")
+
+    def test_one_disagreement_exits_1_and_is_listed(self):
+        self.write_reference(["none", "red", "none"])
+        code, log = run_main(["verify-mini", *self.flags])
+        self.assertEqual(code, 1, log)
+        self.assertIn("lane_type: agree 3/3", log)
+        self.assertIn("in_intersection: agree 3/3", log)
+        self.assertIn("traffic_light_state: agree 2/3", log)
+        self.assertIn("m2: ours=none devkit=red", log)
+
+    def test_full_agreement_exits_0(self):
+        self.write_reference(["none", "none", "none"])
+        code, log = run_main(["verify-mini", *self.flags])
+        self.assertEqual(code, 0, log)
+        self.assertNotIn("[FAIL]", log)
 
 
 if __name__ == "__main__":
