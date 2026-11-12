@@ -1,0 +1,201 @@
+{
+  "feature_version": "map-v1",
+  "rows": {
+    "trainval_candidates": 1406469,
+    "mini_68": 68
+  },
+  "frame_threshold": 0.9,
+  "by_city": {
+    "sg-one-north": {
+      "scenarios": 211541,
+      "on_lane_or_connector": 211421,
+      "on_lane_or_connector_share": 0.9994327340799183,
+      "values": {
+        "lane_type": {
+          "lane": 162363,
+          "lane_connector": 49058,
+          "none": 120
+        },
+        "in_intersection": {
+          "False": 162360,
+          "True": 49181
+        },
+        "traffic_light_state": {
+          "green": 5841,
+          "none": 233,
+          "red": 16010,
+          "unknown": 189457
+        }
+      }
+    },
+    "us-ma-boston": {
+      "scenarios": 230483,
+      "on_lane_or_connector": 230475,
+      "on_lane_or_connector_share": 0.9999652902817128,
+      "values": {
+        "lane_type": {
+          "lane": 169165,
+          "lane_connector": 61310,
+          "none": 8
+        },
+        "in_intersection": {
+          "False": 169165,
+          "True": 61318
+        },
+        "traffic_light_state": {
+          "green": 13938,
+          "none": 76,
+          "red": 33770,
+          "unknown": 182699
+        }
+      }
+    },
+    "us-nv-las-vegas-strip": {
+      "scenarios": 611758,
+      "on_lane_or_connector": 611663,
+      "on_lane_or_connector_share": 0.9998447098362424,
+      "values": {
+        "lane_type": {
+          "lane": 331419,
+          "lane_connector": 280244,
+          "none": 95
+        },
+        "in_intersection": {
+          "False": 331419,
+          "True": 280339
+        },
+        "traffic_light_state": {
+          "green": 69574,
+          "none": 95,
+          "red": 135444,
+          "unknown": 406645
+        }
+      }
+    },
+    "us-pa-pittsburgh-hazelwood": {
+      "scenarios": 352687,
+      "on_lane_or_connector": 352521,
+      "on_lane_or_connector_share": 0.9995293277041682,
+      "values": {
+        "lane_type": {
+          "lane": 303154,
+          "lane_connector": 49367,
+          "none": 166
+        },
+        "in_intersection": {
+          "False": 303154,
+          "True": 49533
+        },
+        "traffic_light_state": {
+          "green": 12772,
+          "none": 171,
+          "red": 31299,
+          "unknown": 308445
+        }
+      }
+    }
+  },
+  "mini_values": {
+    "lane_type": {
+      "lane": 42,
+      "lane_connector": 26
+    },
+    "in_intersection": {
+      "False": 42,
+      "True": 26
+    },
+    "traffic_light_state": {
+      "green": 7,
+      "red": 20,
+      "unknown": 41
+    }
+  },
+  "missing_counts": {
+    "trainval_candidates": {
+      "lane_type": 0,
+      "in_intersection": 0,
+      "traffic_light_state": 0
+    },
+    "mini_68": {
+      "lane_type": 0,
+      "in_intersection": 0,
+      "traffic_light_state": 0
+    }
+  },
+  "added_dependencies": {
+    "shapely": "2.2.0",
+    "pyproj": "3.7.2"
+  },
+  "build_provenance": {
+    "feature_version": "map-v1",
+    "created_utc": "2026-11-07T00:48:19.343403+00:00",
+    "maps": {
+      "sg-one-north": {
+        "version": "9.17.1964",
+        "crs": "epsg:32648",
+        "gpkg": {
+          "path": "C:\\nuplan\\dataset\\maps\\sg-one-north\\9.17.1964\\map.gpkg",
+          "size_bytes": 317575168,
+          "mtime_utc": "2022-05-05T07:13:04+00:00"
+        }
+      },
+      "us-ma-boston": {
+        "version": "9.12.1817",
+        "crs": "epsg:32619",
+        "gpkg": {
+          "path": "C:\\nuplan\\dataset\\maps\\us-ma-boston\\9.12.1817\\map.gpkg",
+          "size_bytes": 254087168,
+          "mtime_utc": "2022-10-05T17:17:20+00:00"
+        }
+      },
+      "us-nv-las-vegas-strip": {
+        "version": "9.15.1915",
+        "crs": "epsg:32611",
+        "gpkg": {
+          "path": "C:\\nuplan\\dataset\\maps\\us-nv-las-vegas-strip\\9.15.1915\\map.gpkg",
+          "size_bytes": 523767808,
+          "mtime_utc": "2022-05-05T07:13:56+00:00"
+        }
+      },
+      "us-pa-pittsburgh-hazelwood": {
+        "version": "9.17.1937",
+        "crs": "epsg:32617",
+        "gpkg": {
+          "path": "C:\\nuplan\\dataset\\maps\\us-pa-pittsburgh-hazelwood\\9.17.1937\\map.gpkg",
+          "size_bytes": 186761216,
+          "mtime_utc": "2022-05-05T07:14:00+00:00"
+        }
+      }
+    },
+    "map_errors": {},
+    "status_error_count": 0,
+    "libraries": {
+      "shapely": "2.2.0",
+      "pyproj": "3.7.2",
+      "pandas": "3.1.1"
+    }
+  },
+  "outputs": {
+    "map": "E:\\Project\\nuplan\\processed\\features\\scenario_map.parquet",
+    "mini": "E:\\Project\\nuplan\\processed\\features\\scenario_map_mini_68.parquet",
+    "audit": "E:\\Project\\nuplan\\processed\\features\\scenario_map_alignment.parquet",
+    "reference": "C:\\Users\\yash\\data298a-causal-inference-uplift\\artifacts\\additional_planners\\map_reference\\mini_68_reference_input.parquet"
+  },
+  "checks": {
+    "generated_utc": "2026-11-07T00:48:45+00:00",
+    "results": {
+      "trainval_candidates: one row per input scenario (1,406,469 rows, 1,406,469 inputs)": true,
+      "mini_68: one row per input scenario (68 rows, 68 inputs)": true,
+      "scenario_id unique in both Map_Tables and in the Audit_Table per subset": true,
+      "feature columns contain only allowed values or null": true,
+      "*_missing equals the null mask of its feature": true,
+      "Audit_Table ids equal the union of both Map_Tables": true,
+      "frame alignment sg-one-north: share on lane or lane_connector 0.9994 (threshold 0.90)": true,
+      "frame alignment us-ma-boston: share on lane or lane_connector 1.0000 (threshold 0.90)": true,
+      "frame alignment us-nv-las-vegas-strip: share on lane or lane_connector 0.9998 (threshold 0.90)": true,
+      "frame alignment us-pa-pittsburgh-hazelwood: share on lane or lane_connector 0.9995 (threshold 0.90)": true,
+      "Map_Table columns are exactly scenario_id, lane_type, lane_type_missing, in_intersection, in_intersection_missing, traffic_light_state, traffic_light_state_missing": true
+    },
+    "complete": true
+  }
+}
