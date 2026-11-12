@@ -1,0 +1,905 @@
+{
+  "tool_version": "classical-baseline-v1",
+  "generated_utc": "2026-11-07T03:31:48+00:00",
+  "experiment": "pittsburgh_65_five",
+  "config": {
+    "seed": 0,
+    "models": [
+      "constant",
+      "ridge",
+      "hgb"
+    ],
+    "hyperparameters": {
+      "constant": {
+        "strategy": "mean"
+      },
+      "ridge": {
+        "alpha": 1.0
+      },
+      "hgb": {
+        "max_depth": 3,
+        "learning_rate": 0.05,
+        "max_iter": 200,
+        "min_samples_leaf": 5,
+        "l2_regularization": 1.0,
+        "early_stopping": false,
+        "random_state": 0
+      }
+    },
+    "versions": {
+      "python": "3.11.18",
+      "numpy": "2.4.6",
+      "pandas": "3.1.1",
+      "sklearn": "1.9.1",
+      "pyarrow": "26.0.1"
+    },
+    "table": "E:\\Project\\nuplan\\processed\\labels\\pittsburgh_65_five\\planner_modeling_table.parquet",
+    "table_sha256": "011f2152553dec08b2ceae27faf18e3bc621882421d610cf09c48d7754c14c40",
+    "schema_sha256": "f18bdfeed6439cff184b1b045c974e97bbb48814f18c0828e3432d292a9a0871",
+    "n_features": 38,
+    "categorical_columns": [
+      "map_name",
+      "lane_type",
+      "traffic_light_state",
+      "weather_code"
+    ],
+    "permutation_repeats": 10,
+    "bootstrap_resamples": 1000
+  },
+  "n_rows": 65,
+  "folds": {
+    "0": 13,
+    "1": 13,
+    "2": 13,
+    "3": 13,
+    "4": 13
+  },
+  "targets": [
+    "delta_pdm_closed_vs_idm",
+    "delta_pdm_hybrid_vs_idm",
+    "delta_urban_driver_vs_idm",
+    "delta_gc_pgp_vs_idm"
+  ],
+  "models": [
+    "constant",
+    "ridge",
+    "hgb"
+  ],
+  "top_k": {
+    "0.1": 7,
+    "0.2": 13
+  },
+  "per_target": {
+    "constant": {
+      "delta_pdm_closed_vs_idm": {
+        "pehe": 0.3415519206099365,
+        "pehe_ci": [
+          0.26960687659227023,
+          0.4082203877430885
+        ],
+        "mae": 0.2677727017755421,
+        "spearman": -0.13702202846429565,
+        "top10_recall": 0.0,
+        "top20_recall": 0.07692307692307693,
+        "qini": -0.3443373249888644
+      },
+      "delta_pdm_hybrid_vs_idm": {
+        "pehe": 0.34154227800767234,
+        "pehe_ci": [
+          0.26961625402705147,
+          0.40820650694332317
+        ],
+        "mae": 0.26781856200505544,
+        "spearman": -0.13702202846429565,
+        "top10_recall": 0.0,
+        "top20_recall": 0.07692307692307693,
+        "qini": -0.34421626461726224
+      },
+      "delta_urban_driver_vs_idm": {
+        "pehe": 0.512559625171903,
+        "pehe_ci": [
+          0.42052648393008857,
+          0.6066884604932724
+        ],
+        "mae": 0.41134484673423577,
+        "spearman": -0.052054423171059204,
+        "top10_recall": 0.14285714285714285,
+        "top20_recall": 0.07692307692307693,
+        "qini": -0.06977012319104654
+      },
+      "delta_gc_pgp_vs_idm": {
+        "pehe": 0.47791280808580294,
+        "pehe_ci": [
+          0.38649907231010405,
+          0.5734123836619716
+        ],
+        "mae": 0.3617169701663984,
+        "spearman": -0.08887905772635281,
+        "top10_recall": 0.14285714285714285,
+        "top20_recall": 0.46153846153846156,
+        "qini": -0.19277099215648763
+      }
+    },
+    "ridge": {
+      "delta_pdm_closed_vs_idm": {
+        "pehe": 0.4646423599161363,
+        "pehe_ci": [
+          0.38911646075585055,
+          0.5487911078591233
+        ],
+        "mae": 0.3723499144615236,
+        "spearman": -0.058304177094059814,
+        "top10_recall": 0.2857142857142857,
+        "top20_recall": 0.15384615384615385,
+        "qini": 0.17376333723065895
+      },
+      "delta_pdm_hybrid_vs_idm": {
+        "pehe": 0.46469218253240047,
+        "pehe_ci": [
+          0.3891056011824725,
+          0.5489424890659903
+        ],
+        "mae": 0.37234121641619095,
+        "spearman": -0.058304177094059814,
+        "top10_recall": 0.2857142857142857,
+        "top20_recall": 0.15384615384615385,
+        "qini": 0.17382607685634077
+      },
+      "delta_urban_driver_vs_idm": {
+        "pehe": 0.7885769120057033,
+        "pehe_ci": [
+          0.517524596734539,
+          1.1234502955145125
+        ],
+        "mae": 0.5194425226589066,
+        "spearman": 0.1298850353437645,
+        "top10_recall": 0.14285714285714285,
+        "top20_recall": 0.3076923076923077,
+        "qini": 0.05816260942037085
+      },
+      "delta_gc_pgp_vs_idm": {
+        "pehe": 0.5330420913087062,
+        "pehe_ci": [
+          0.44050496638074094,
+          0.626440543738943
+        ],
+        "mae": 0.430966092394616,
+        "spearman": 0.1724347661967271,
+        "top10_recall": 0.0,
+        "top20_recall": 0.3076923076923077,
+        "qini": 0.17534733705311964
+      }
+    },
+    "hgb": {
+      "delta_pdm_closed_vs_idm": {
+        "pehe": 0.3844618647692611,
+        "pehe_ci": [
+          0.31298873096070295,
+          0.4492759316648542
+        ],
+        "mae": 0.30031087205517,
+        "spearman": 0.022780907070012114,
+        "top10_recall": 0.2857142857142857,
+        "top20_recall": 0.23076923076923078,
+        "qini": 0.11500614529063682
+      },
+      "delta_pdm_hybrid_vs_idm": {
+        "pehe": 0.38307472357707795,
+        "pehe_ci": [
+          0.31013550299267084,
+          0.4488140216225256
+        ],
+        "mae": 0.29470922145224737,
+        "spearman": 0.019293349167242842,
+        "top10_recall": 0.2857142857142857,
+        "top20_recall": 0.23076923076923078,
+        "qini": 0.12234109885174599
+      },
+      "delta_urban_driver_vs_idm": {
+        "pehe": 0.5782766428737321,
+        "pehe_ci": [
+          0.48713240617416864,
+          0.6667810444347182
+        ],
+        "mae": 0.46763618286869924,
+        "spearman": 0.03785526776754414,
+        "top10_recall": 0.0,
+        "top20_recall": 0.3076923076923077,
+        "qini": 0.030347723819758372
+      },
+      "delta_gc_pgp_vs_idm": {
+        "pehe": 0.4883759500094833,
+        "pehe_ci": [
+          0.4017293823198056,
+          0.5984749151526566
+        ],
+        "mae": 0.37452529429255177,
+        "spearman": 0.3215765303985277,
+        "top10_recall": 0.14285714285714285,
+        "top20_recall": 0.46153846153846156,
+        "qini": 0.31565673583034803
+      }
+    }
+  },
+  "policy": {
+    "constant": {
+      "value": 0.862902571300178,
+      "value_ci": [
+        0.7964666595270951,
+        0.925885004232263
+      ],
+      "regret": 0.025898425011449344,
+      "choices": {
+        "idm": 0,
+        "pdm_closed": 13,
+        "pdm_hybrid": 52,
+        "urban_driver": 0,
+        "gc_pgp": 0
+      }
+    },
+    "ridge": {
+      "value": 0.8039371197016016,
+      "value_ci": [
+        0.7281718515036117,
+        0.8788880961582443
+      ],
+      "regret": 0.0848638766100257,
+      "choices": {
+        "idm": 11,
+        "pdm_closed": 20,
+        "pdm_hybrid": 25,
+        "urban_driver": 7,
+        "gc_pgp": 2
+      }
+    },
+    "hgb": {
+      "value": 0.8345608449706834,
+      "value_ci": [
+        0.7608005225079728,
+        0.9065347682805183
+      ],
+      "regret": 0.054240151340943954,
+      "choices": {
+        "idm": 10,
+        "pdm_closed": 31,
+        "pdm_hybrid": 15,
+        "urban_driver": 3,
+        "gc_pgp": 6
+      }
+    },
+    "best_single_planner": {
+      "value": 0.862902571300178,
+      "value_ci": [
+        0.7964666595270951,
+        0.925885004232263
+      ],
+      "regret": 0.025898425011449344,
+      "per_fold": {
+        "0": "pdm_hybrid",
+        "1": "pdm_hybrid",
+        "2": "pdm_hybrid",
+        "3": "pdm_closed",
+        "4": "pdm_hybrid"
+      }
+    },
+    "always_idm": {
+      "value": 0.6763040741580518,
+      "value_ci": [
+        0.5789426168244111,
+        0.7762778468670407
+      ],
+      "regret": 0.21249692215357552
+    },
+    "oracle": {
+      "value": 0.8888009963116273,
+      "value_ci": [
+        0.8249384877949926,
+        0.9443246879910647
+      ],
+      "regret": 0.0
+    }
+  },
+  "best_model": "constant",
+  "scenario_type_pehe": {
+    "delta_pdm_closed_vs_idm": {
+      "behind_long_vehicle": {
+        "n": 5,
+        "pehe": 0.19592844777408702
+      },
+      "changing_lane": {
+        "n": 5,
+        "pehe": 0.6387675218413186
+      },
+      "following_lane_with_lead": {
+        "n": 5,
+        "pehe": 0.1914699722263366
+      },
+      "high_lateral_acceleration": {
+        "n": 5,
+        "pehe": 0.19703624675471082
+      },
+      "high_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.15715832922104167
+      },
+      "low_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.1538152177080357
+      },
+      "near_multiple_vehicles": {
+        "n": 5,
+        "pehe": 0.17834848404159281
+      },
+      "starting_left_turn": {
+        "n": 5,
+        "pehe": 0.3273702391687852
+      },
+      "starting_right_turn": {
+        "n": 5,
+        "pehe": 0.6360857897858132
+      },
+      "starting_straight_traffic_light_intersection_traversal": {
+        "n": 5,
+        "pehe": 0.1886133939657944
+      },
+      "stationary_in_traffic": {
+        "n": 5,
+        "pehe": 0.3887064028415604
+      },
+      "stopping_with_lead": {
+        "n": 5,
+        "pehe": 0.19123996107894894
+      },
+      "waiting_for_pedestrian_to_cross": {
+        "n": 5,
+        "pehe": 0.42364076782652793
+      }
+    },
+    "delta_pdm_hybrid_vs_idm": {
+      "behind_long_vehicle": {
+        "n": 5,
+        "pehe": 0.19597300808748677
+      },
+      "changing_lane": {
+        "n": 5,
+        "pehe": 0.6387276839665316
+      },
+      "following_lane_with_lead": {
+        "n": 5,
+        "pehe": 0.19151825360265068
+      },
+      "high_lateral_acceleration": {
+        "n": 5,
+        "pehe": 0.1970515434850802
+      },
+      "high_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.15716200147836448
+      },
+      "low_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.15382780079695912
+      },
+      "near_multiple_vehicles": {
+        "n": 5,
+        "pehe": 0.17835321352192152
+      },
+      "starting_left_turn": {
+        "n": 5,
+        "pehe": 0.327312333523872
+      },
+      "starting_right_turn": {
+        "n": 5,
+        "pehe": 0.6360136014852521
+      },
+      "starting_straight_traffic_light_intersection_traversal": {
+        "n": 5,
+        "pehe": 0.18866869386364532
+      },
+      "stationary_in_traffic": {
+        "n": 5,
+        "pehe": 0.38872451894184523
+      },
+      "stopping_with_lead": {
+        "n": 5,
+        "pehe": 0.19126463888423376
+      },
+      "waiting_for_pedestrian_to_cross": {
+        "n": 5,
+        "pehe": 0.4236430369545203
+      }
+    },
+    "delta_urban_driver_vs_idm": {
+      "behind_long_vehicle": {
+        "n": 5,
+        "pehe": 0.20429043634566807
+      },
+      "changing_lane": {
+        "n": 5,
+        "pehe": 0.671508307641787
+      },
+      "following_lane_with_lead": {
+        "n": 5,
+        "pehe": 0.4740154247839209
+      },
+      "high_lateral_acceleration": {
+        "n": 5,
+        "pehe": 0.5417272581367081
+      },
+      "high_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.6631281928601737
+      },
+      "low_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.3951703303908424
+      },
+      "near_multiple_vehicles": {
+        "n": 5,
+        "pehe": 0.22696005266493327
+      },
+      "starting_left_turn": {
+        "n": 5,
+        "pehe": 0.5035830834533119
+      },
+      "starting_right_turn": {
+        "n": 5,
+        "pehe": 0.7956144292378253
+      },
+      "starting_straight_traffic_light_intersection_traversal": {
+        "n": 5,
+        "pehe": 0.3488299449267647
+      },
+      "stationary_in_traffic": {
+        "n": 5,
+        "pehe": 0.5793294368235957
+      },
+      "stopping_with_lead": {
+        "n": 5,
+        "pehe": 0.3837736446003113
+      },
+      "waiting_for_pedestrian_to_cross": {
+        "n": 5,
+        "pehe": 0.515668432323186
+      }
+    },
+    "delta_gc_pgp_vs_idm": {
+      "behind_long_vehicle": {
+        "n": 5,
+        "pehe": 0.1834642497310347
+      },
+      "changing_lane": {
+        "n": 5,
+        "pehe": 0.7871076869504771
+      },
+      "following_lane_with_lead": {
+        "n": 5,
+        "pehe": 0.41834723172503285
+      },
+      "high_lateral_acceleration": {
+        "n": 5,
+        "pehe": 0.46060380013485464
+      },
+      "high_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.18307963504678718
+      },
+      "low_magnitude_speed": {
+        "n": 5,
+        "pehe": 0.47402548543128264
+      },
+      "near_multiple_vehicles": {
+        "n": 5,
+        "pehe": 0.22362237258930984
+      },
+      "starting_left_turn": {
+        "n": 5,
+        "pehe": 0.5135855247687198
+      },
+      "starting_right_turn": {
+        "n": 5,
+        "pehe": 0.5305413013492158
+      },
+      "starting_straight_traffic_light_intersection_traversal": {
+        "n": 5,
+        "pehe": 0.5614940536513169
+      },
+      "stationary_in_traffic": {
+        "n": 5,
+        "pehe": 0.5740342317871604
+      },
+      "stopping_with_lead": {
+        "n": 5,
+        "pehe": 0.5207558321491258
+      },
+      "waiting_for_pedestrian_to_cross": {
+        "n": 5,
+        "pehe": 0.3992413027979518
+      }
+    }
+  },
+  "failure_cases": [
+    {
+      "scenario_id": "2021.08.30.13.08.03_veh-08_01643_01900:3e3142191e155621",
+      "scenario_type": "changing_lane",
+      "target": "delta_gc_pgp_vs_idm",
+      "y_true": 1.0,
+      "y_pred": -0.23697651850228507,
+      "abs_error": 1.236976518502285
+    },
+    {
+      "scenario_id": "2021.08.30.13.08.03_veh-08_01643_01900:3e3142191e155621",
+      "scenario_type": "changing_lane",
+      "target": "delta_urban_driver_vs_idm",
+      "y_true": 1.0,
+      "y_pred": -0.23393575535828515,
+      "abs_error": 1.233935755358285
+    },
+    {
+      "scenario_id": "2021.09.21.19.41.31_veh-45_00608_01295:71042ef9c22e5735",
+      "scenario_type": "stationary_in_traffic",
+      "target": "delta_gc_pgp_vs_idm",
+      "y_true": 1.0,
+      "y_pred": -0.22667355685554888,
+      "abs_error": 1.226673556855549
+    },
+    {
+      "scenario_id": "2021.09.21.19.41.31_veh-45_00608_01295:71042ef9c22e5735",
+      "scenario_type": "stationary_in_traffic",
+      "target": "delta_urban_driver_vs_idm",
+      "y_true": 1.0,
+      "y_pred": -0.22156859928134892,
+      "abs_error": 1.221568599281349
+    },
+    {
+      "scenario_id": "2021.08.30.14.29.08_veh-45_01105_01737:3362b078d2115115",
+      "scenario_type": "changing_lane",
+      "target": "delta_gc_pgp_vs_idm",
+      "y_true": 1.0,
+      "y_pred": -0.21228516748942108,
+      "abs_error": 1.212285167489421
+    }
+  ],
+  "permutation_importance": {
+    "ridge": {
+      "delta_pdm_closed_vs_idm": [
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.0545615700529999
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.03129779893870972
+        },
+        {
+          "feature": "sun_elevation_deg",
+          "importance": 0.025517610645490112
+        },
+        {
+          "feature": "weather_wind_speed_kmh",
+          "importance": 0.024325614291664143
+        },
+        {
+          "feature": "traffic_light_state",
+          "importance": 0.008847614962823859
+        },
+        {
+          "feature": "num_pedestrians",
+          "importance": 0.008530831551030718
+        },
+        {
+          "feature": "num_tracked_agents",
+          "importance": 0.008517057471685375
+        },
+        {
+          "feature": "nearest_agent_relative_speed_mps",
+          "importance": 0.005315087465235313
+        },
+        {
+          "feature": "weather_cloud_cover_pct",
+          "importance": 0.0034350615056336735
+        },
+        {
+          "feature": "nearest_agent_distance_m",
+          "importance": 0.002127264826148505
+        }
+      ],
+      "delta_pdm_hybrid_vs_idm": [
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.05452021298903118
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.031285211566493214
+        },
+        {
+          "feature": "sun_elevation_deg",
+          "importance": 0.025548162296782095
+        },
+        {
+          "feature": "weather_wind_speed_kmh",
+          "importance": 0.024356141542480413
+        },
+        {
+          "feature": "traffic_light_state",
+          "importance": 0.008820866056631533
+        },
+        {
+          "feature": "num_pedestrians",
+          "importance": 0.00853289591538677
+        },
+        {
+          "feature": "num_tracked_agents",
+          "importance": 0.008494794154741808
+        },
+        {
+          "feature": "nearest_agent_relative_speed_mps",
+          "importance": 0.005321257587181388
+        },
+        {
+          "feature": "weather_cloud_cover_pct",
+          "importance": 0.0034435347475080314
+        },
+        {
+          "feature": "nearest_agent_distance_m",
+          "importance": 0.0021297886201626657
+        }
+      ],
+      "delta_urban_driver_vs_idm": [
+        {
+          "feature": "num_tracked_agents",
+          "importance": 0.22935037557472748
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.2233542067678395
+        },
+        {
+          "feature": "num_pedestrians",
+          "importance": 0.07468393032353618
+        },
+        {
+          "feature": "weather_precipitation_prev_3h_mm",
+          "importance": 0.04925123347314379
+        },
+        {
+          "feature": "ego_speed",
+          "importance": 0.0338814741283148
+        },
+        {
+          "feature": "weather_wind_gusts_kmh",
+          "importance": 0.03293213224540891
+        },
+        {
+          "feature": "weather_code",
+          "importance": 0.024280017788039066
+        },
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.02161608694960294
+        },
+        {
+          "feature": "agents_within_50m",
+          "importance": 0.016839835631592366
+        },
+        {
+          "feature": "weather_cloud_cover_pct",
+          "importance": 0.014110060346426225
+        }
+      ],
+      "delta_gc_pgp_vs_idm": [
+        {
+          "feature": "num_vehicles",
+          "importance": 0.13345711896156148
+        },
+        {
+          "feature": "num_tracked_agents",
+          "importance": 0.09626492458112587
+        },
+        {
+          "feature": "num_pedestrians",
+          "importance": 0.08496623230681812
+        },
+        {
+          "feature": "agents_within_50m",
+          "importance": 0.06816024673205903
+        },
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.056649504122878655
+        },
+        {
+          "feature": "weather_wind_gusts_kmh",
+          "importance": 0.027433436079913977
+        },
+        {
+          "feature": "weather_precipitation_prev_3h_mm",
+          "importance": 0.019592647180919034
+        },
+        {
+          "feature": "traffic_light_state",
+          "importance": 0.01805565148345059
+        },
+        {
+          "feature": "weather_wind_speed_kmh",
+          "importance": 0.016895256512794655
+        },
+        {
+          "feature": "nearest_agent_relative_speed_mps",
+          "importance": 0.012980058434540812
+        }
+      ]
+    },
+    "hgb": {
+      "delta_pdm_closed_vs_idm": [
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.028081421667552987
+        },
+        {
+          "feature": "weather_temperature_c",
+          "importance": 0.022292213156758136
+        },
+        {
+          "feature": "sun_elevation_deg",
+          "importance": 0.018994635843764537
+        },
+        {
+          "feature": "weather_precipitation_prev_3h_mm",
+          "importance": 0.005062704403342148
+        },
+        {
+          "feature": "ego_speed",
+          "importance": 0.0048203181810086496
+        },
+        {
+          "feature": "nearest_agent_relative_speed_mps",
+          "importance": 0.004017231877844746
+        },
+        {
+          "feature": "weather_cloud_cover_pct",
+          "importance": 0.003003961765574146
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.0022946211203491254
+        },
+        {
+          "feature": "weather_relative_humidity_pct",
+          "importance": 0.0013116433805438511
+        },
+        {
+          "feature": "map_name",
+          "importance": 0.0
+        }
+      ],
+      "delta_pdm_hybrid_vs_idm": [
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.028536389604378737
+        },
+        {
+          "feature": "weather_temperature_c",
+          "importance": 0.022205620359993367
+        },
+        {
+          "feature": "sun_elevation_deg",
+          "importance": 0.01741511643551293
+        },
+        {
+          "feature": "weather_precipitation_prev_3h_mm",
+          "importance": 0.006339394606210512
+        },
+        {
+          "feature": "ego_speed",
+          "importance": 0.005244715157037555
+        },
+        {
+          "feature": "nearest_agent_relative_speed_mps",
+          "importance": 0.003835337741158778
+        },
+        {
+          "feature": "weather_relative_humidity_pct",
+          "importance": 0.00299363400014216
+        },
+        {
+          "feature": "weather_cloud_cover_pct",
+          "importance": 0.002125749098222549
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.002051777462183429
+        },
+        {
+          "feature": "weather_code",
+          "importance": 0.00010310257298207673
+        }
+      ],
+      "delta_urban_driver_vs_idm": [
+        {
+          "feature": "ego_speed",
+          "importance": 0.030877486330439474
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.017245635317928245
+        },
+        {
+          "feature": "agents_within_50m",
+          "importance": 0.00750675143078894
+        },
+        {
+          "feature": "weather_temperature_c",
+          "importance": 0.004099300592441608
+        },
+        {
+          "feature": "weather_precipitation_prev_3h_mm",
+          "importance": 0.0036756738154500464
+        },
+        {
+          "feature": "num_tracked_agents",
+          "importance": 0.0033158467796999868
+        },
+        {
+          "feature": "traffic_light_state",
+          "importance": 0.0015336505488054617
+        },
+        {
+          "feature": "nearest_agent_relative_speed_mps",
+          "importance": 0.00032925039881576514
+        },
+        {
+          "feature": "num_pedestrians",
+          "importance": 0.00012981976297829706
+        },
+        {
+          "feature": "map_name",
+          "importance": 0.0
+        }
+      ],
+      "delta_gc_pgp_vs_idm": [
+        {
+          "feature": "ego_yaw_rate",
+          "importance": 0.02075938174388004
+        },
+        {
+          "feature": "num_pedestrians",
+          "importance": 0.019357457217723653
+        },
+        {
+          "feature": "num_vehicles",
+          "importance": 0.017321377544627023
+        },
+        {
+          "feature": "sun_elevation_deg",
+          "importance": 0.010997573206810387
+        },
+        {
+          "feature": "nearest_agent_distance_m",
+          "importance": 0.010524356067812296
+        },
+        {
+          "feature": "weather_precipitation_prev_3h_mm",
+          "importance": 0.006353787681590549
+        },
+        {
+          "feature": "ego_speed",
+          "importance": 0.003801140336635766
+        },
+        {
+          "feature": "weather_relative_humidity_pct",
+          "importance": 0.0034783387359656553
+        },
+        {
+          "feature": "traffic_light_state",
+          "importance": 0.0019361690807056253
+        },
+        {
+          "feature": "weather_precipitation_mm",
+          "importance": 0.0012962569338360386
+        }
+      ]
+    }
+  }
+}
